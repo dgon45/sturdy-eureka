@@ -1,0 +1,992 @@
+<!doctype html>
+<html lang="ko"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ShotCraft</title>
+<meta name="theme-color" content="#12151f">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+</head><body>
+
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one column builder, sticky header + ad bar, step chips on top, live prompt card pinned below the options */
+:root{
+  --bg:#f3f4f8; --surface:#ffffff; --line:#d9dce7; --fg:#1d2233; --muted:#5f667d;
+  --accent:#c9700f; --accent-ink:#ffffff; --accent-soft:#fbead6; --sel:#1f3a8a; --sel-soft:#e3e9fb;
+  --ad:#eef0f5; --shade:rgba(20,24,40,.55);
+  --f-display:"Do Hyeon","IBM Plex Sans KR",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans KR",system-ui,-apple-system,"Malgun Gothic",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12151f; --surface:#1b1f2c; --line:#2d3346; --fg:#e8eaf2; --muted:#9aa1b8;
+  --accent:#f0a24a; --accent-ink:#1b1206; --accent-soft:#3a2a17; --sel:#9db4ff; --sel-soft:#24305a;
+  --ad:#232838; --shade:rgba(0,0,0,.65); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12151f; --surface:#1b1f2c; --line:#2d3346; --fg:#e8eaf2; --muted:#9aa1b8;
+  --accent:#f0a24a; --accent-ink:#1b1206; --accent-soft:#3a2a17; --sel:#9db4ff; --sel-soft:#24305a;
+  --ad:#232838; --shade:rgba(0,0,0,.65); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2{font-family:var(--f-display);font-weight:400;letter-spacing:.01em;text-wrap:balance;margin:0}
+
+/* login */
+.login{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding-block:32px}
+.login .adbar{width:100%;max-width:400px}
+.adfoot{padding-block:8px 24px}
+.login-card{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px 22px;display:grid;gap:16px}
+.logo{font-family:var(--f-display);font-size:34px;letter-spacing:.04em}
+.logo span{color:var(--accent)}
+.login p{margin:0;color:var(--muted)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 14px;font-weight:600}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.field{display:grid;gap:6px}
+.field label{font-size:13px;color:var(--muted)}
+input[type=text],textarea{width:100%;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.note{font-size:12.5px;color:var(--muted)}
+.err{font-size:13px;color:#c0392b}
+
+/* header + ad bar */
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.hrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:10px}
+.hrow .logo{font-size:24px}
+.who{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.pill{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--ad);color:var(--muted);font-weight:600}
+.pill.pro{background:var(--accent-soft);color:var(--accent)}
+.linkbtn{background:none;border:none;padding:4px;color:var(--muted);text-decoration:underline;font-size:13px}
+.adbar-zone{background:var(--surface);border-bottom:1px solid var(--line);padding-block:6px}
+.adbar{width:728px;max-width:100%;height:40px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 12px;border:1px dashed var(--line);border-radius:6px;background:var(--ad);font-size:13px;color:var(--muted);overflow:hidden}
+.adbar b{color:var(--fg);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.adtag{font-size:10.5px;letter-spacing:.08em;border:1px solid var(--line);border-radius:4px;padding:1px 5px;flex:none}
+
+/* steps */
+main{padding-block:16px 40px;display:grid;gap:16px}
+.steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.steps .chip{flex-direction:column;justify-content:center;text-align:center;min-width:0;padding:6px 3px;font-size:12.5px;line-height:1.25;gap:1px;border-radius:10px;word-break:keep-all;overflow-wrap:break-word}
+@media (max-width:440px){.steps .chip{font-size:11px;letter-spacing:-.01em}}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 11px;font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.chip .n{font-family:var(--f-mono);font-size:11.5px}
+.chip.on{border-color:var(--accent);color:var(--fg);background:var(--accent-soft)}
+.chip.done .n{color:var(--accent)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 16px;display:grid;gap:14px}
+.panel h2{font-size:24px}
+.panel .hint{margin:-8px 0 0;color:var(--muted);font-size:13.5px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.opt{text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 11px;display:grid;gap:2px;min-width:0}
+.opt small{color:var(--muted);font-family:var(--f-mono);font-size:11px;overflow-wrap:anywhere}
+.opt.on{border-color:var(--sel);background:var(--sel-soft)}
+.nav{display:flex;justify-content:space-between;gap:8px}
+.live{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;gap:8px}
+.live-h{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.label{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.prompt{font-family:var(--f-mono);font-size:13.5px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;margin:0;min-width:0}
+.prompt.empty{color:var(--muted)}
+.final{font-size:14.5px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:14px}
+.copy{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:6px 11px;font-size:13px;font-weight:600}
+.copy.big{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);padding:12px;font-size:15px;width:100%}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:13.5px;z-index:30}
+.summary{display:grid;gap:4px;font-size:13.5px}
+.summary div{display:grid;grid-template-columns:96px 1fr;gap:8px}
+.summary span:first-child{color:var(--muted)}
+
+/* ad popup (guest, step 8 copy only) */
+.modal{position:fixed;inset:0;background:var(--shade);display:grid;place-items:center;z-index:40;padding:20px}
+.modal-card{width:100%;max-width:360px;background:var(--surface);border-radius:14px;padding:20px;display:grid;gap:14px;text-align:center}
+.adbox{height:250px;max-width:100%;border:1px dashed var(--line);border-radius:8px;background:var(--ad);display:grid;place-items:center;color:var(--muted);font-size:13px}
+.count{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.layout{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+.col{display:grid;gap:16px;min-width:0;align-content:start}
+.ai{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:6px;align-content:start}
+.ai p{margin:0;font-size:12px;color:var(--muted)}
+.ai-list{display:flex;flex-wrap:wrap;gap:6px}
+.ai-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;text-decoration:none;color:var(--fg);border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:4px 10px;font-weight:600;font-size:12.5px;line-height:1.4;min-width:0}
+.ai-ic{display:inline-flex;flex:none;color:var(--fg)}
+.ai-ic svg{width:16px;height:16px;display:block}
+.ai-nm{flex:1;min-width:0}
+.ai-btn .go{color:var(--accent);font-family:var(--f-mono);font-size:11px;flex:none}
+.ai-btn:hover{border-color:var(--accent)}
+.ai-btn[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
+.ai-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (min-width:900px){
+  .wrap{max-width:1040px}
+  .layout{grid-template-columns:minmax(0,1fr) 180px}
+  .ai{position:sticky;top:calc(env(safe-area-inset-top,0px) + 130px);align-self:start}
+  .ai-list{display:grid;grid-template-columns:1fr}
+  .ai-btn{padding:6px 10px}
+}
+@media (prefers-reduced-motion:no-preference){.opt,.chip{transition:border-color .15s,background .15s}}
+/* v4: camera diagrams, grouped options, final prompt segments with keep */
+.group{display:grid;gap:8px}
+.group + .group{border-top:1px solid var(--line);padding-top:12px}
+.group-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.group-h .note{font-size:12px}
+.grid.cam{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+.opt .dg{width:100%;max-width:100%;height:auto;aspect-ratio:3/2;display:block;margin-bottom:4px;background:var(--surface);border-radius:6px}
+.opt.on .dg{background:var(--bg)}
+.dg .fig{stroke:var(--muted);stroke-width:1.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.dg .fig-ghost{opacity:.4}
+.dg .fr{stroke:var(--fg);stroke-width:1.6;fill:none}
+.dg .fr0{stroke:var(--muted);stroke-width:1.2;fill:none;stroke-dasharray:3 3}
+.dg .ar{stroke:var(--accent);stroke-width:1.8;fill:none;stroke-linecap:round}
+.dg .arh{fill:var(--accent)}
+.dg .cam{fill:var(--sel)}
+.dg .sight{stroke:var(--sel);stroke-width:1.2;stroke-dasharray:2 3;fill:none}
+.opt{position:relative}
+.opt .kbadge{position:absolute;top:6px;right:6px;font-size:10.5px;font-weight:600;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:1px 6px}
+.segs{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.seg{font-family:var(--f-mono);font-size:13px;line-height:1.45;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:5px 9px;max-width:100%;overflow-wrap:anywhere}
+.seg.kept{color:var(--accent);background:var(--accent-soft);border-color:var(--accent);font-weight:500}
+.seg.pick{outline:2px solid var(--sel);outline-offset:1px}
+.seg-label{font-size:11.5px;color:var(--muted);font-weight:600;letter-spacing:.06em}
+.keepbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.keepbar .what{font-size:13.5px;min-width:0;overflow-wrap:anywhere}
+.keepbar .what b{font-family:var(--f-mono);font-weight:500}
+.keepbtn{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:7px 14px;font-weight:600;font-size:13.5px}
+.keepbtn.off{background:var(--surface);color:var(--accent)}
+.keepinfo{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--muted)}
+.modal-card.left{text-align:left}
+.modal-card h3{margin:0;font-family:var(--f-display);font-weight:400;font-size:22px}
+.modal-card p{margin:0;color:var(--muted);font-size:14px}
+/* v6: language picker, copy lock, kept color everywhere */
+.noselect,.noselect *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.pv.kept{color:var(--accent);background:var(--accent-soft);border-radius:4px;padding:0 3px;font-weight:500}
+.opt.kept{border-color:var(--accent);border-style:dashed}
+.opt.kept .oname{color:var(--accent);font-weight:600}
+.opt.kept.on{border-style:solid;background:var(--accent-soft)}
+.langs{display:flex;gap:6px;flex-wrap:wrap}
+.lang{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:5px 12px;font-size:13px}
+.lang.on{border-color:var(--accent);background:var(--accent-soft);color:var(--fg);font-weight:600}
+.keepbtn:disabled{opacity:.45;cursor:not-allowed}
+.who{flex-wrap:wrap;justify-content:flex-end;min-width:0}
+@media (max-width:440px){.who .uname{display:none}.hrow .logo{font-size:21px}}
+#langSel{font:inherit;font-size:12.5px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:3px 6px}
+.field.custom{border-top:1px dashed var(--line);padding-top:12px}
+</style>
+
+<div id="app"></div>
+
+<script>
+// ============ GENRES ============
+const GENRES=[
+  {id:"western",label:"🤠 서부시대",en:"American Wild West"},
+  {id:"scifi",label:"🚀 SF·우주",en:"Sci-Fi / Space"},
+  {id:"fantasy",label:"🧙 판타지",en:"Fantasy"},
+  {id:"modern",label:"🏙️ 현대도시",en:"Modern City"},
+  {id:"horror",label:"👻 공포·스릴",en:"Horror / Thriller"},
+  {id:"anime",label:"✨ 애니메이션",en:"Anime / Animation"},
+  {id:"history",label:"⚔️ 역사·시대",en:"Historical / Period"},
+  {id:"nature",label:"🌿 자연·야생",en:"Nature / Wildlife"},
+  {id:"romance",label:"💕 로맨스",en:"Romance / Drama"},
+  {id:"action",label:"💥 액션·범죄",en:"Action / Crime"},
+  {id:"dystopia",label:"🌆 디스토피아",en:"Dystopia"},
+  {id:"mystery",label:"🔍 미스터리",en:"Mystery / Noir"},
+  {id:"sports",label:"⚽ 스포츠",en:"Sports"},
+  {id:"war",label:"💣 전쟁",en:"War / Military"},
+  {id:"musical",label:"🎵 뮤지컬",en:"Musical / Dance"},
+  {id:"comedy",label:"😂 코미디",en:"Comedy / Parody"},
+  {id:"superhero",label:"🦸 슈퍼히어로",en:"Superhero"},
+  {id:"cyber",label:"💻 사이버펑크",en:"Cyberpunk"},
+  {id:"idol",label:"🎤 아이돌·K팝",en:"K-pop / Idol"},
+  {id:"crime",label:"🕵️ 범죄스릴러",en:"Crime Thriller"},
+];
+// ============ SUBJECTS ============
+const SUBJECTS={
+  western:[{id:"w1",label:"🤠 카우보이",en:"lone cowboy"},{id:"w2",label:"⭐ 보안관",en:"sheriff"},{id:"w3",label:"🔫 무법자",en:"outlaw"},{id:"w4",label:"🪶 원주민 전사",en:"Native American warrior"},{id:"w5",label:"💃 살롱 댄서",en:"saloon dancer"},{id:"w6",label:"🐎 말",en:"horse"},{id:"w7",label:"🐄 소 떼",en:"cattle herd"},{id:"w8",label:"🚂 증기기관차",en:"steam locomotive"},{id:"w9",label:"💰 현상금 사냥꾼",en:"bounty hunter"},{id:"w10",label:"🃏 도박사",en:"gambler"},{id:"w11",label:"⛏️ 금 채굴자",en:"gold prospector"},{id:"w12",label:"🌵 선인장",en:"cactus"}],
+  scifi:[{id:"s1",label:"👨‍🚀 우주비행사",en:"astronaut"},{id:"s2",label:"👽 외계인",en:"alien creature"},{id:"s3",label:"🤖 로봇",en:"robot"},{id:"s4",label:"🛸 우주선",en:"spaceship"},{id:"s5",label:"🦾 사이보그",en:"cyborg"},{id:"s6",label:"🪐 행성",en:"alien planet"},{id:"s7",label:"🧠 AI 존재",en:"sentient AI being"},{id:"s8",label:"🦿 메카슈트",en:"powered mech suit"},{id:"s9",label:"🌀 웜홀",en:"wormhole portal"},{id:"s10",label:"📡 홀로그램",en:"holographic display"},{id:"s11",label:"🌌 성운",en:"colorful nebula"},{id:"s12",label:"⏱️ 타임머신",en:"time machine"}],
+  fantasy:[{id:"f1",label:"🧙 마법사",en:"wizard"},{id:"f2",label:"🐉 드래곤",en:"dragon"},{id:"f3",label:"🧝 엘프",en:"elf archer"},{id:"f4",label:"🛡️ 기사",en:"armored knight"},{id:"f5",label:"🧚 요정",en:"fairy"},{id:"f6",label:"🧹 마녀",en:"witch"},{id:"f7",label:"👺 오크",en:"orc warrior"},{id:"f8",label:"🦅 불사조",en:"phoenix"},{id:"f9",label:"🦄 유니콘",en:"unicorn"},{id:"f10",label:"🧛 뱀파이어",en:"vampire lord"},{id:"f11",label:"💀 네크로맨서",en:"necromancer"},{id:"f12",label:"😈 악마",en:"demon lord"}],
+  modern:[{id:"m1",label:"👔 비즈니스맨",en:"businessman"},{id:"m2",label:"🧑 10대 청소년",en:"teenager"},{id:"m3",label:"🔍 형사",en:"detective"},{id:"m4",label:"🚗 스포츠카",en:"sports car"},{id:"m5",label:"👥 군중",en:"crowd of people"},{id:"m6",label:"💻 해커",en:"hacker"},{id:"m7",label:"👩‍⚕️ 간호사",en:"nurse"},{id:"m8",label:"👨‍🍳 요리사",en:"chef"},{id:"m9",label:"📰 기자",en:"journalist"},{id:"m10",label:"🎸 뮤지션",en:"street musician"},{id:"m11",label:"📱 인플루언서",en:"social media influencer"},{id:"m12",label:"🏃 운동선수",en:"athlete"}],
+  horror:[{id:"h1",label:"👹 괴물",en:"lurking monster"},{id:"h2",label:"👻 유령",en:"vengeful ghost"},{id:"h3",label:"😱 희생자",en:"terrified victim"},{id:"h4",label:"🧟 좀비",en:"zombie horde"},{id:"h5",label:"🔪 살인마",en:"masked killer"},{id:"h6",label:"😈 악마",en:"demonic entity"},{id:"h7",label:"🪆 인형",en:"possessed doll"},{id:"h8",label:"🐺 늑대인간",en:"werewolf"},{id:"h9",label:"🕷️ 거미",en:"giant spider"},{id:"h10",label:"🕯️ 사이비",en:"cult members"},{id:"h11",label:"🌑 그림자",en:"shadowy figure"},{id:"h12",label:"🧙 마녀",en:"evil witch"}],
+  anime:[{id:"a1",label:"⚡ 주인공",en:"anime hero protagonist"},{id:"a2",label:"😈 악당",en:"villain"},{id:"a3",label:"🎒 여고생",en:"school girl"},{id:"a4",label:"🤖 메카",en:"giant mecha robot"},{id:"a5",label:"🌸 정령",en:"spirit creature"},{id:"a6",label:"🥷 닌자",en:"ninja"},{id:"a7",label:"⚔️ 사무라이",en:"ronin samurai"},{id:"a8",label:"✨ 마법소녀",en:"magical girl"},{id:"a9",label:"👿 마왕",en:"demon lord"},{id:"a10",label:"🐱 고양이소녀",en:"catgirl"},{id:"a11",label:"🎤 아이돌",en:"idol singer"},{id:"a12",label:"🌟 선택받은자",en:"chosen one"}],
+  history:[{id:"hi1",label:"⚔️ 전사",en:"warrior"},{id:"hi2",label:"👑 왕",en:"king"},{id:"hi3",label:"🗡️ 사무라이",en:"samurai"},{id:"hi4",label:"🪖 군인",en:"soldier"},{id:"hi5",label:"🛡️ 검투사",en:"gladiator"},{id:"hi6",label:"👸 황후",en:"empress"},{id:"hi7",label:"🪓 바이킹",en:"viking warrior"},{id:"hi8",label:"😤 파라오",en:"pharaoh"},{id:"hi9",label:"🏹 궁수",en:"archer"},{id:"hi10",label:"🙏 승려",en:"Buddhist monk"},{id:"hi11",label:"🎩 귀족",en:"aristocrat nobleman"},{id:"hi12",label:"🏴‍☠️ 해적",en:"historical pirate"}],
+  nature:[{id:"n1",label:"🐺 늑대",en:"wolf pack"},{id:"n2",label:"🦅 독수리",en:"bald eagle"},{id:"n3",label:"🐻 곰",en:"grizzly bear"},{id:"n4",label:"🦁 사자",en:"lion"},{id:"n5",label:"🐋 고래",en:"humpback whale"},{id:"n6",label:"🦈 상어",en:"great white shark"},{id:"n7",label:"🐘 코끼리",en:"elephant herd"},{id:"n8",label:"🐆 표범",en:"black panther"},{id:"n9",label:"🦊 여우",en:"arctic fox"},{id:"n10",label:"🦍 고릴라",en:"gorilla"},{id:"n11",label:"🧭 탐험가",en:"wilderness explorer"},{id:"n12",label:"🦉 부엉이",en:"great horned owl"}],
+  romance:[{id:"r1",label:"👫 연인",en:"couple in love"},{id:"r2",label:"🧑 남자 주인공",en:"male lead"},{id:"r3",label:"👩 여자 주인공",en:"female lead"},{id:"r4",label:"💒 결혼식",en:"wedding ceremony"},{id:"r5",label:"💔 전 연인",en:"estranged ex-lover"},{id:"r6",label:"🌹 첫사랑",en:"childhood first love"},{id:"r7",label:"👨‍👩‍👧 가족",en:"happy family"},{id:"r8",label:"💐 꽃다발",en:"flower bouquet"},{id:"r9",label:"💌 러브레터",en:"love letter"},{id:"r10",label:"😤 라이벌",en:"love rival"}],
+  action:[{id:"ac1",label:"💪 영웅",en:"action hero"},{id:"ac2",label:"🕴️ 갱스터",en:"gangster"},{id:"ac3",label:"🕵️ 비밀요원",en:"secret agent"},{id:"ac4",label:"🏎️ 카 체이스",en:"car chase"},{id:"ac5",label:"💥 폭발",en:"massive explosion"},{id:"ac6",label:"🎯 저격수",en:"sniper"},{id:"ac7",label:"🗡️ 암살자",en:"assassin"},{id:"ac8",label:"👮 경찰",en:"undercover cop"},{id:"ac9",label:"🛡️ 특수부대",en:"SWAT team"},{id:"ac10",label:"🥊 격투사",en:"MMA fighter"},{id:"ac11",label:"🏃 도망자",en:"fugitive"},{id:"ac12",label:"🧗 파쿠르",en:"parkour runner"}],
+  dystopia:[{id:"dy1",label:"🧥 생존자",en:"survivor"},{id:"dy2",label:"✊ 반란군",en:"rebel"},{id:"dy3",label:"😤 독재자",en:"dictator"},{id:"dy4",label:"☢️ 돌연변이",en:"mutant"},{id:"dy5",label:"🚁 감시 드론",en:"surveillance drone"},{id:"dy6",label:"🔧 수집자",en:"scavenger"}],
+  mystery:[{id:"my1",label:"🔍 탐정",en:"detective"},{id:"my2",label:"😟 용의자",en:"suspect"},{id:"my3",label:"👁️ 목격자",en:"witness"},{id:"my4",label:"💄 팜파탈",en:"femme fatale"},{id:"my5",label:"🤫 정보원",en:"informant"},{id:"my6",label:"📷 탐사기자",en:"investigative journalist"}],
+  sports:[{id:"sp1",label:"⚽ 축구선수",en:"soccer player"},{id:"sp2",label:"🥊 복서",en:"boxer"},{id:"sp3",label:"🏃 주자",en:"sprinter"},{id:"sp4",label:"🏊 수영선수",en:"swimmer"},{id:"sp5",label:"🏀 농구선수",en:"basketball player"},{id:"sp6",label:"📋 코치",en:"coach"}],
+  war:[{id:"wa1",label:"🪖 전투병",en:"infantry soldier"},{id:"wa2",label:"✈️ 파일럿",en:"fighter pilot"},{id:"wa3",label:"🩺 군의관",en:"field medic"},{id:"wa4",label:"🎖️ 장군",en:"general"},{id:"wa5",label:"🛡️ 탱크",en:"battle tank"},{id:"wa6",label:"🎯 저격수",en:"sniper"}],
+  musical:[{id:"mu1",label:"🎤 가수",en:"lead singer"},{id:"mu2",label:"💃 댄서",en:"dancer"},{id:"mu3",label:"🎸 밴드",en:"rock band"},{id:"mu4",label:"🎻 오케스트라",en:"orchestra"},{id:"mu5",label:"🎵 버스커",en:"street performer"},{id:"mu6",label:"🎼 지휘자",en:"conductor"}],
+  comedy:[{id:"co1",label:"🤡 광대",en:"clown"},{id:"co2",label:"🤝 콤비",en:"comedy duo"},{id:"co3",label:"😤 꼰대 상사",en:"clueless boss"},{id:"co4",label:"🤓 너드",en:"nerd"},{id:"co5",label:"👵 할머니",en:"feisty grandma"},{id:"co6",label:"👽 순진한 외계인",en:"naive alien"}],
+  superhero:[{id:"su1",label:"🦸 슈퍼히어로",en:"superhero"},{id:"su2",label:"🦹 슈퍼빌런",en:"supervillain"},{id:"su3",label:"🤜 사이드킥",en:"sidekick"},{id:"su4",label:"🦇 자경단원",en:"vigilante"},{id:"su5",label:"⚡ 스피드스터",en:"speedster"},{id:"su6",label:"👊 히어로팀",en:"hero team"}],
+  cyber:[{id:"cy1",label:"💻 해커",en:"hacker"},{id:"cy2",label:"🦾 사이보그",en:"cyborg"},{id:"cy3",label:"🧠 넷러너",en:"netrunner"},{id:"cy4",label:"🤖 AI",en:"rogue AI"},{id:"cy5",label:"✊ 레지스탕스",en:"resistance fighter"},{id:"cy6",label:"💊 딜러",en:"black market dealer"}],
+  idol:[{id:"id1",label:"🎤 K팝 그룹",en:"K-pop idol group"},{id:"id2",label:"⭐ 센터",en:"group center"},{id:"id3",label:"🌱 연습생",en:"idol trainee"},{id:"id4",label:"💜 팬덤",en:"screaming fandom"},{id:"id5",label:"💿 컴백 무대",en:"comeback stage"},{id:"id6",label:"😤 라이벌 그룹",en:"rival idol group"}],
+  crime:[{id:"cr1",label:"💰 도둑",en:"master thief"},{id:"cr2",label:"🕴️ 마피아",en:"mafia syndicate"},{id:"cr3",label:"🔫 히트맨",en:"hitman"},{id:"cr4",label:"🎭 사기꾼",en:"con artist"},{id:"cr5",label:"🏅 FBI 요원",en:"FBI agent"},{id:"cr6",label:"😨 인질",en:"hostage"}],
+};
+
+// ============ FACES (expression + gaze) ============
+const FACES=[
+  {id:"fa_smile",label:"😊 은은한 미소",en:"subtle gentle smile"},
+  {id:"fa_grin",label:"😄 활짝 웃음",en:"wide joyful grin"},
+  {id:"fa_shy",label:"☺️ 수줍은 미소",en:"shy bashful smile, cheeks slightly flushed"},
+  {id:"fa_smirk",label:"😏 비웃음",en:"smirking with contempt"},
+  {id:"fa_sinister",label:"😈 사악한 미소",en:"slow sinister grin"},
+  {id:"fa_teary",label:"🥹 눈물 고인 눈",en:"eyes welling up with tears"},
+  {id:"fa_smiletear",label:"🥲 웃으며 눈물",en:"smiling through tears"},
+  {id:"fa_sob",label:"😭 오열",en:"sobbing uncontrollably, face crumpling"},
+  {id:"fa_angry",label:"😠 분노",en:"face twisted in anger, furrowed brows"},
+  {id:"fa_jaw",label:"😤 이를 악묾",en:"clenched jaw, fierce determination"},
+  {id:"fa_resolute",label:"🫡 결연함",en:"resolute, steely gaze"},
+  {id:"fa_surprise",label:"😲 깜짝 놀람",en:"wide-eyed surprise, mouth open"},
+  {id:"fa_fear",label:"😱 공포",en:"terrified, trembling with fear"},
+  {id:"fa_shock",label:"😨 충격",en:"frozen in shock, face pale"},
+  {id:"fa_flustered",label:"😳 당황",en:"flustered and embarrassed"},
+  {id:"fa_think",label:"🤔 생각에 잠김",en:"deep in thought, slight frown"},
+  {id:"fa_blank",label:"😐 무표정",en:"blank expressionless face"},
+  {id:"fa_lonely",label:"😔 쓸쓸함",en:"melancholic, lonely expression"},
+  {id:"fa_relief",label:"😌 안도",en:"relieved sigh, shoulders relaxing"},
+  {id:"fa_longing",label:"🥺 애틋함",en:"longing, yearning look"},
+  {id:"fa_love",label:"😍 반한 눈빛",en:"love-struck, soft adoring eyes"},
+  {id:"fa_doubt",label:"🤨 의심",en:"suspicious narrowed eyes"},
+  {id:"fa_wink",label:"😉 장난스러운 윙크",en:"playful wink"},
+  {id:"fa_tired",label:"😩 지침",en:"exhausted, weary face"},
+  {id:"fa_awe",label:"🤩 경외감",en:"awestruck, lips slightly parted"},
+  {id:"fa_pain",label:"😣 고통",en:"wincing in pain"},
+];
+const GAZES=[
+  {id:"gz_cam",label:"📷 카메라 정면 응시",en:"looking straight into the camera"},
+  {id:"gz_away",label:"↗️ 시선 피함",en:"looking away from the camera"},
+  {id:"gz_up",label:"⬆️ 위를 올려다봄",en:"gazing upward"},
+  {id:"gz_down",label:"⬇️ 시선을 떨굼",en:"eyes cast down"},
+  {id:"gz_side",label:"👀 곁눈질",en:"side glance"},
+  {id:"gz_close",label:"😌 눈을 감음",en:"eyes slowly closing"},
+];
+
+const TONES=[
+  {id:"tn_whisper",label:"🤫 속삭임",en:"speaking in a soft whisper"},
+  {id:"tn_calm",label:"😌 차분한 말투",en:"speaking in a calm, gentle voice"},
+  {id:"tn_cheer",label:"😄 밝고 신남",en:"cheerful, upbeat tone of voice"},
+  {id:"tn_serious",label:"😐 진지함",en:"serious, measured tone of voice"},
+  {id:"tn_angry",label:"😡 화내며 고함",en:"shouting angrily"},
+  {id:"tn_sad",label:"😢 떨리는 목소리",en:"trembling, tearful voice"},
+  {id:"tn_sarcastic",label:"😏 비꼬는 말투",en:"sarcastic, dry tone"},
+  {id:"tn_flirty",label:"😘 애교 · 설렘",en:"playful, flirty tone"},
+  {id:"tn_cold",label:"🧊 차가운 말투",en:"cold, emotionless voice"},
+  {id:"tn_heroic",label:"🦸 비장한 대사",en:"bold, heroic declaration"},
+  {id:"tn_narr",label:"🎙️ 다큐 내레이션",en:"documentary-style voiceover narration"},
+  {id:"tn_news",label:"📺 뉴스 앵커",en:"clear news anchor tone"},
+  {id:"tn_asmr",label:"🎧 ASMR",en:"soft close-mic ASMR voice"},
+  {id:"tn_comic",label:"🤪 과장된 코믹",en:"exaggerated comedic delivery"},
+  {id:"tn_accent",label:"🗣️ 사투리",en:"speaking with a strong regional accent"},
+  {id:"tn_child",label:"🧒 아이 같은 말투",en:"childlike, innocent voice"},
+];
+
+// ============ ACTIONS / PLACES / LIGHT / STYLE ============
+const ACTIONS=[
+  {id:"ac_walk",label:"🚶 천천히 걸어감",en:"walking slowly toward the camera"},
+  {id:"ac_run",label:"🏃 전력 질주",en:"sprinting at full speed"},
+  {id:"ac_fight",label:"⚔️ 격렬한 전투",en:"locked in an intense fight"},
+  {id:"ac_look",label:"👀 먼 곳을 응시",en:"staring into the distance"},
+  {id:"ac_turn",label:"↩️ 뒤돌아봄",en:"turning around to look back"},
+  {id:"ac_dance",label:"💃 춤을 춤",en:"dancing energetically"},
+  {id:"ac_fly",label:"🪽 하늘을 남",en:"flying through the air"},
+  {id:"ac_talk",label:"💬 대화 중",en:"in a tense conversation"},
+  {id:"ac_cry",label:"😢 눈물을 흘림",en:"with tears running down the face"},
+  {id:"ac_laugh",label:"😂 크게 웃음",en:"bursting into laughter"},
+  {id:"ac_hide",label:"🫣 숨어서 지켜봄",en:"hiding and watching"},
+  {id:"ac_explode",label:"💥 폭발에서 탈출",en:"escaping a huge explosion"},
+];
+const PLACES=[
+  {id:"p_desert",label:"🏜️ 사막",en:"in a vast desert"},
+  {id:"p_city",label:"🌃 밤의 도시",en:"in a neon-lit city at night"},
+  {id:"p_forest",label:"🌲 깊은 숲",en:"in a misty deep forest"},
+  {id:"p_space",label:"🌌 우주 공간",en:"in outer space"},
+  {id:"p_rooftop",label:"🏢 옥상",en:"on a skyscraper rooftop"},
+  {id:"p_beach",label:"🏖️ 해변",en:"on a sunset beach"},
+  {id:"p_castle",label:"🏰 고성",en:"in an ancient castle hall"},
+  {id:"p_street",label:"🛣️ 비 오는 골목",en:"in a rainy narrow alley"},
+  {id:"p_stage",label:"🎤 무대",en:"on a concert stage"},
+  {id:"p_ruins",label:"🏚️ 폐허",en:"in post-apocalyptic ruins"},
+  {id:"p_snow",label:"🏔️ 설산",en:"on a snowy mountain peak"},
+  {id:"p_room",label:"🛋️ 실내 방",en:"in a dim interior room"},
+];
+const LIGHTS=[
+  {id:"l_gold",label:"🌅 골든아워",en:"golden hour sunlight"},
+  {id:"l_blue",label:"🌙 블루아워",en:"cool blue hour light"},
+  {id:"l_neon",label:"💜 네온",en:"vivid neon lighting"},
+  {id:"l_noir",label:"🖤 하드 섀도",en:"high-contrast noir shadows"},
+  {id:"l_soft",label:"☁️ 부드러운 빛",en:"soft diffused light"},
+  {id:"l_back",label:"✨ 역광",en:"dramatic backlight with rim light"},
+  {id:"l_fire",label:"🔥 불빛",en:"warm flickering firelight"},
+  {id:"l_fog",label:"🌫️ 안개 속 빛줄기",en:"volumetric fog and light rays"},
+];
+const STYLES=[
+  {id:"st_cine",label:"🎬 시네마틱",en:"cinematic film look"},
+  {id:"st_real",label:"📷 극사실",en:"photorealistic"},
+  {id:"st_anime",label:"🎨 애니풍",en:"anime style, cel shading"},
+  {id:"st_pixar",label:"🧸 3D 애니메이션",en:"3D animated film style"},
+  {id:"st_vintage",label:"📼 빈티지 필름",en:"vintage 16mm film look"},
+  {id:"st_dream",label:"💭 몽환적",en:"dreamy, ethereal atmosphere"},
+  {id:"st_epic",label:"🏆 웅장함",en:"epic, grand scale"},
+  {id:"st_dark",label:"🌑 어둡고 긴장감",en:"dark, tense mood"},
+];
+const RATIOS=[{id:"16:9",label:"16:9 가로"},{id:"9:16",label:"9:16 세로(쇼츠)"},{id:"1:1",label:"1:1 정사각"}];
+const DURATIONS=[{id:"5",label:"5초"},{id:"8",label:"8초"},{id:"10",label:"10초"}];
+
+// ============ CAMERA (with simple diagrams) ============
+// dg: f = frame [x,y,w,h] in a 96x64 box; s = start frame, e = end frame for moves
+const SHOTS=[
+  {id:"sh_wide",label:"와이드 · 풍경 전체",en:"wide shot",dg:{shot:[4,3,88,58]}},
+  {id:"sh_full",label:"풀샷 · 전신",en:"full body shot",dg:{shot:[31,7,34,54]}},
+  {id:"sh_med",label:"미디엄 · 허리 위",en:"medium shot from the waist up",dg:{shot:[33,8,30,35]}},
+  {id:"sh_close",label:"클로즈업 · 얼굴",en:"close-up on the face",dg:{shot:[37,8,22,20]}},
+  {id:"sh_ecu",label:"익스트림 클로즈업 · 눈",en:"extreme close-up on the eyes",dg:{shot:[40,12,16,8]}},
+];
+const MOVES=[
+  {id:"mv_static",label:"고정",en:"static locked-off camera",dg:{e:[28,12,40,40]}},
+  {id:"mv_in",label:"천천히 다가가기",en:"slow dolly-in toward the subject",dg:{s:[4,3,88,58],e:[32,16,32,30]}},
+  {id:"mv_out",label:"점점 멀어지기",en:"slow dolly-out, pulling away from the subject",dg:{s:[32,16,32,30],e:[4,3,88,58]}},
+  {id:"mv_up",label:"아래에서 위로",en:"camera rises from bottom to top",dg:{s:[26,30,44,31],e:[26,3,44,31]}},
+  {id:"mv_down",label:"위에서 아래로",en:"camera descends from top to bottom",dg:{s:[26,3,44,31],e:[26,30,44,31]}},
+  {id:"mv_lr",label:"왼쪽 → 오른쪽",en:"camera glides from left to right",dg:{s:[3,13,42,38],e:[51,13,42,38]}},
+  {id:"mv_rl",label:"오른쪽 → 왼쪽",en:"camera glides from right to left",dg:{s:[51,13,42,38],e:[3,13,42,38]}},
+  {id:"mv_diag",label:"대각선 이동",en:"diagonal camera move from lower left to upper right",dg:{s:[3,27,42,34],e:[51,3,42,34]}},
+  {id:"mv_follow",label:"따라가기",en:"tracking shot following the subject",dg:{follow:1,s:[6,13,38,38],e:[52,13,38,38]}},
+  {id:"mv_followout",label:"따라가며 멀어지기",en:"camera follows the subject while pulling back",dg:{follow:1,s:[14,20,24,26],e:[40,4,54,56]}},
+  {id:"mv_crane",label:"위로 올라가며 멀어지기",en:"crane up and pull away to reveal the whole scene",dg:{s:[32,22,32,30],e:[4,2,88,46]}},
+  {id:"mv_orbit",label:"주위를 한 바퀴",en:"360-degree orbit around the subject",dg:{orbit:1}},
+  {id:"mv_top",label:"하늘에서 내려다보기",en:"top-down bird's-eye drone shot",dg:{top:1}},
+  {id:"mv_zoom",label:"빠르게 줌 인",en:"fast crash zoom into the subject",dg:{s:[4,3,88,58],e:[38,12,20,18],fast:1}},
+  {id:"mv_hand",label:"손으로 들고 흔들림",en:"handheld camera with natural shake",dg:{hand:1}},
+];
+const ANGLES=[
+  {id:"an_eye",label:"눈높이",en:"eye-level angle",dg:{cam:[8,22],to:[56,22]}},
+  {id:"an_low",label:"아래에서 올려다보기",en:"low angle looking up",dg:{cam:[8,58],to:[56,22]}},
+  {id:"an_high",label:"위에서 내려다보기",en:"high angle looking down",dg:{cam:[8,4],to:[56,32]}},
+  {id:"an_pov",label:"1인칭 시점",en:"first-person POV",dg:{pov:1}},
+  {id:"an_dutch",label:"기울어진 화면",en:"dutch tilted angle",dg:{dutch:1}},
+];
+
+// ============ QUALITY BOOSTERS ============
+const QUALITY=[
+  {key:"q_lens",title:"화질 · 렌즈",note:"영화 카메라처럼 보이게",list:[
+    {id:"ql_arri",label:"🎥 영화 카메라 느낌",en:"shot on ARRI Alexa, 35mm lens"},
+    {id:"ql_dof",label:"🌫️ 배경 흐림 (아웃포커스)",en:"shallow depth of field, soft bokeh"},
+    {id:"ql_sharp",label:"🔍 선명 · 디테일",en:"sharp focus, highly detailed textures"},
+    {id:"ql_hdr",label:"🖥️ 4K HDR",en:"4K, high dynamic range"},
+  ]},
+  {key:"q_color",title:"색감",note:"한 가지만 고르는 게 좋아요",list:[
+    {id:"qc_teal",label:"🎞️ 영화 색감 (청록·주황)",en:"teal and orange color grading"},
+    {id:"qc_warm",label:"🍂 따뜻한 빈티지",en:"warm vintage color grade"},
+    {id:"qc_muted",label:"🌫️ 차분한 저채도",en:"desaturated muted tones"},
+    {id:"qc_vivid",label:"🌈 쨍한 원색",en:"vibrant saturated colors"},
+  ]},
+  {key:"q_motion",title:"움직임",note:"영상이 덜 어색해져요",list:[
+    {id:"qm_nat",label:"🌊 자연스러운 움직임",en:"smooth natural motion, realistic physics"},
+    {id:"qm_slow",label:"🐢 슬로모션",en:"slow motion"},
+    {id:"qm_blur",label:"💨 영화 같은 모션 블러",en:"subtle cinematic motion blur, 24fps"},
+    {id:"qm_steady",label:"🧘 흔들림 없는 화면",en:"steady stabilized camera"},
+  ]},
+  {key:"q_person",title:"인물",note:"얼굴·손이 덜 깨져요",list:[
+    {id:"qp_same",label:"🧑 같은 얼굴 유지",en:"consistent character appearance throughout"},
+    {id:"qp_skin",label:"✨ 자연스러운 피부",en:"natural skin texture, realistic face"},
+    {id:"qp_eyes",label:"👁️ 살아있는 눈빛",en:"expressive, detailed eyes"},
+    {id:"qp_hands",label:"✋ 손 모양 정확히",en:"anatomically correct hands"},
+  ]},
+  {key:"q_fx",title:"날씨 · 효과",list:[
+    {id:"qf_rain",label:"🌧️ 비",en:"light rain falling"},
+    {id:"qf_snow",label:"❄️ 눈",en:"snow drifting down"},
+    {id:"qf_dust",label:"✨ 공기 중 먼지·입자",en:"dust particles floating in the air"},
+    {id:"qf_flare",label:"🌟 렌즈 플레어",en:"anamorphic lens flare"},
+    {id:"qf_wind",label:"🍃 바람에 날리는 머리·옷",en:"wind blowing through hair and clothes"},
+  ]},
+  {key:"q_sound",title:"소리",note:"소리까지 만드는 AI(Veo, Sora 등)에서 효과",list:[
+    {id:"qs_amb",label:"🏙️ 주변 환경음",en:"ambient environmental sound"},
+    {id:"qs_music",label:"🎻 웅장한 음악",en:"dramatic orchestral score"},
+    {id:"qs_sfx",label:"👣 발소리·효과음",en:"footsteps and natural sound effects"},
+    {id:"qs_quiet",label:"🔇 음악 없이 현장음만",en:"no music, only natural ambience"},
+  ]},
+  {key:"q_avoid",title:"피하기",note:"넣으면 'Avoid:' 줄로 따로 붙어요",avoid:true,list:[
+    {id:"qa_blur",label:"🚫 흐릿함",en:"blurry footage"},
+    {id:"qa_face",label:"🚫 일그러진 얼굴·손",en:"distorted faces or hands"},
+    {id:"qa_text",label:"🚫 글자·워터마크",en:"text, watermarks, logos"},
+    {id:"qa_flicker",label:"🚫 깜빡임",en:"flickering"},
+  ]},
+];
+
+// AI video tools: copy prompt, then open the site in a new tab
+// brand icons from @lobehub/icons (MIT)
+const AI_ICONS={"Sora": "<svg aria-hidden=\"true\" height=\"1em\" style=\"flex:none;line-height:1\" viewBox=\"0 0 24 24\" width=\"1em\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M19.503 0H4.496A4.496 4.496 0 000 4.496v15.007A4.496 4.496 0 004.496 24h15.007A4.496 4.496 0 0024 19.503V4.496A4.496 4.496 0 0019.503 0z\" fill=\"url(#lobe-icons-sora-0-_R_0_)\"></path><path d=\"M9.726 11.36a.306.306 0 110 .612.306.306 0 010-.612z\" fill=\"url(#lobe-icons-sora-1-_R_0_)\"></path><path clip-rule=\"evenodd\" d=\"M8.408 9.561c.033-.009.065.002.096.033.145.15.292.298.44.447l.021.016c.01.005.017.009.024.01l.608.157c.042.01.068.033.077.066.009.035-.002.067-.033.098l-.447.439a.098.098 0 00-.016.022.1.1 0 00-.01.024l-.157.607c-.01.042-.033.068-.067.077-.034.01-.066-.002-.096-.033l-.44-.446a.117.117 0 00-.047-.027c-.202-.053-.405-.105-.607-.156-.042-.01-.068-.033-.077-.068-.01-.033.002-.066.033-.096.15-.146.298-.292.447-.44a.092.092 0 00.016-.021.101.101 0 00.01-.025l.157-.607c.01-.042.033-.068.068-.077z\" fill=\"url(#lobe-icons-sora-2-_R_0_)\" fill-rule=\"evenodd\"></path><path d=\"M14.87 9.982a.307.307 0 110 .613.307.307 0 010-.613z\" fill=\"url(#lobe-icons-sora-3-_R_0_)\"></path><path clip-rule=\"evenodd\" d=\"M13.553 8.187c.035-.01.067.002.097.032l.438.448a.117.117 0 00.046.026l.606.158c.042.01.067.033.077.068.009.033-.002.065-.034.095l-.447.438a.123.123 0 00-.027.046l-.157.605c-.01.042-.034.068-.068.077-.034.009-.066-.002-.096-.033-.145-.15-.291-.299-.437-.447a.09.09 0 00-.022-.017.09.09 0 00-.025-.01l-.605-.158c-.042-.01-.068-.033-.077-.067-.009-.034.002-.066.033-.096.15-.145.298-.291.447-.437a.093.093 0 00.017-.022.1.1 0 00.01-.025l.158-.605c.01-.042.033-.068.066-.076z\" fill=\"url(#lobe-icons-sora-4-_R_0_)\" fill-rule=\"evenodd\"></path><path clip-rule=\"evenodd\" d=\"M9.065 3.343a4.577 4.577 0 012.284-.311c1 .114 1.891.54 2.673 1.274a.086.086 0 00.08.022 4.549 4.549 0 013.046.275l.047.021.116.058a4.58 4.58 0 012.188 2.398c.209.51.314 1.041.316 1.595.015.415-.03.823-.135 1.224a.12.12 0 00.03.116c.594.606.988 1.329 1.183 2.168.289 1.426-.007 2.71-.887 3.855l-.136.166a4.546 4.546 0 01-2.201 1.387.12.12 0 00-.08.077c-.191.551-.384 1.023-.741 1.494-.9 1.186-2.221 1.846-3.711 1.838-1.187-.006-2.24-.44-3.157-1.302a.106.106 0 00-.106-.024c-.388.125-.78.144-1.203.139a4.44 4.44 0 01-1.946-.467 4.542 4.542 0 01-1.61-1.336c-.152-.201-.303-.391-.413-.616a5.805 5.805 0 01-.37-.961 4.58 4.58 0 01-.013-2.299.122.122 0 00.005-.055.084.084 0 00-.027-.048 4.466 4.466 0 01-1.035-1.651 3.896 3.896 0 01-.25-1.192 5.183 5.183 0 01.141-1.6c.337-1.112.982-1.985 1.933-2.619.212-.14.412-.25.601-.329.215-.09.43-.165.646-.228a.096.096 0 00.065-.065 4.51 4.51 0 01.828-1.616 4.535 4.535 0 011.839-1.388zm.723 5.735c-.865-.614-2.048-.31-2.483.656-.226.5-.27 1.026-.133 1.58l.108.44.195.712c.08.4.232.765.459 1.096l.022.032c.12.142.252.272.394.389 1.039.854 2.456.284 2.739-.992l.037-.16.01-.06c.044-.3.03-.594-.04-.882a35.608 35.608 0 00-.41-1.517c-.163-.554-.462-.985-.898-1.294zm5.328-1.235c-.646-.6-1.643-.623-2.285-.019-.25.235-.425.552-.523.949a2.603 2.603 0 000 1.226l.01.04.042.136c.095.315.183.625.264.93.085.317.152.53.204.638.43.905 1.365 1.556 2.382 1.141.946-.386 1.23-1.507 1.016-2.415a9.78 9.78 0 00-.105-.41c-.15-.583-.256-.976-.321-1.179a2.41 2.41 0 00-.684-1.037z\" fill=\"url(#lobe-icons-sora-5-_R_0_)\" fill-rule=\"evenodd\"></path><defs><linearGradient gradientUnits=\"userSpaceOnUse\" id=\"lobe-icons-sora-0-_R_0_\" x1=\"12\" x2=\"12\" y1=\"0\" y2=\"24\"><stop stop-color=\"#012659\"></stop><stop offset=\"1\" stop-color=\"#0968DA\"></stop></linearGradient><linearGradient gradientUnits=\"userSpaceOnUse\" id=\"lobe-icons-sora-1-_R_0_\" x1=\"9.859\" x2=\"14.219\" y1=\"3\" y2=\"21.017\"><stop stop-color=\"#fff\"></stop><stop offset=\"1\" stop-color=\"#6BB6FE\"></stop></linearGradient><linearGradient gradientUnits=\"userSpaceOnUse\" id=\"lobe-icons-sora-2-_R_0_\" x1=\"9.859\" x2=\"14.219\" y1=\"3\" y2=\"21.017\"><stop stop-color=\"#fff\"></stop><stop offset=\"1\" stop-color=\"#6BB6FE\"></stop></linearGradient><linearGradient gradientUnits=\"userSpaceOnUse\" id=\"lobe-icons-sora-3-_R_0_\" x1=\"9.859\" x2=\"14.219\" y1=\"3\" y2=\"21.017\"><stop stop-color=\"#fff\"></stop><stop offset=\"1\" stop-color=\"#6BB6FE\"></stop></linearGradient><linearGradient gradientUnits=\"userSpaceOnUse\" id=\"lobe-icons-sora-4-_R_0_\" x1=\"9.859\" x2=\"14.219\" y1=\"3\" y2=\"21.017\"><stop stop-color=\"#fff\"></stop><stop offset=\"1\" stop-color=\"#6BB6FE\"></stop></linearGradient><linearGradient gradientUnits=\"userSpaceOnUse\" id=\"lobe-icons-sora-5-_R_0_\" x1=\"9.859\" x2=\"14.219\" y1=\"3\" y2=\"21.017\"><stop stop-color=\"#fff\"></stop><stop offset=\"1\" stop-color=\"#6BB6FE\"></stop></linearGradient></defs></svg>", "Veo": "<svg aria-hidden=\"true\" height=\"1em\" style=\"flex:none;line-height:1\" viewBox=\"0 0 24 24\" width=\"1em\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z\" fill=\"#3186FF\"></path><path d=\"M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z\" fill=\"url(#lobe-icons-gemini-0-_R_0_)\"></path><path d=\"M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z\" fill=\"url(#lobe-icons-gemini-1-_R_0_)\"></path><path d=\"M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z\" fill=\"url(#lobe-icons-gemini-2-_R_0_)\"></path><defs><linearGradient gradientUnits=\"userSpaceOnUse\" id=\"lobe-icons-gemini-0-_R_0_\" x1=\"7\" x2=\"11\" y1=\"15.5\" y2=\"12\"><stop stop-color=\"#08B962\"></stop><stop offset=\"1\" stop-color=\"#08B962\" stop-opacity=\"0\"></stop></linearGradient><linearGradient gradientUnits=\"userSpaceOnUse\" id=\"lobe-icons-gemini-1-_R_0_\" x1=\"8\" x2=\"11.5\" y1=\"5.5\" y2=\"11\"><stop stop-color=\"#F94543\"></stop><stop offset=\"1\" stop-color=\"#F94543\" stop-opacity=\"0\"></stop></linearGradient><linearGradient gradientUnits=\"userSpaceOnUse\" id=\"lobe-icons-gemini-2-_R_0_\" x1=\"3.5\" x2=\"17.5\" y1=\"13.5\" y2=\"12\"><stop stop-color=\"#FABC12\"></stop><stop offset=\".46\" stop-color=\"#FABC12\" stop-opacity=\"0\"></stop></linearGradient></defs></svg>", "Kling": "<svg aria-hidden=\"true\" height=\"1em\" style=\"flex:none;line-height:1\" viewBox=\"0 0 24 24\" width=\"1em\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M5.412 13.775A23.193 23.193 0 017.41 9.32c3.17-5.492 7.795-8.757 10.33-7.294C12.038-1.266 4.598.944 1.122 6.964A13.378 13.378 0 00.085 9.22c-.259.739.092 1.534.77 1.926l4.557 2.63z\" fill=\"url(#lobe-icons-kling-0-_R_0_)\"></path><path d=\"M18.588 10.164a23.188 23.188 0 01-1.999 4.455c-3.17 5.492-7.795 8.758-10.33 7.294 5.703 3.293 13.143 1.082 16.619-4.938a13.392 13.392 0 001.037-2.255c.259-.738-.092-1.534-.77-1.925l-4.557-2.63z\" fill=\"url(#lobe-icons-kling-1-_R_0_)\"></path><path d=\"M16.59 14.62c3.17-5.492 3.686-11.13 1.15-12.594C15.207.563 10.582 3.83 7.41 9.32c2.074-3.59 5.809-5.315 8.344-3.852 2.534 1.464 2.908 5.56.835 9.151z\" fill=\"url(#lobe-icons-kling-2-_R_0_)\"></path><path d=\"M7.41 9.32c-3.17 5.492-3.686 11.13-1.15 12.593 2.534 1.464 7.159-1.802 10.33-7.294-2.074 3.591-5.809 5.316-8.344 3.852-2.534-1.463-2.908-5.56-.835-9.15z\" fill=\"url(#lobe-icons-kling-3-_R_0_)\"></path><defs><radialGradient cx=\"0\" cy=\"0\" gradientTransform=\"matrix(7.47772 -12.51022 17.14368 10.24728 5.173 13.637)\" gradientUnits=\"userSpaceOnUse\" id=\"lobe-icons-kling-0-_R_0_\" r=\"1\"><stop offset=\".095\" stop-color=\"#FFF959\"></stop><stop offset=\".326\" stop-color=\"#0DF35E\"></stop><stop offset=\".64\" stop-color=\"#0BF2F9\"></stop><stop offset=\"1\" stop-color=\"#04A6F0\"></stop></radialGradient><radialGradient cx=\"0\" cy=\"0\" gradientTransform=\"rotate(120.868 6.491 10.491) scale(14.5747 19.9728)\" gradientUnits=\"userSpaceOnUse\" id=\"lobe-icons-kling-1-_R_0_\" r=\"1\"><stop offset=\".095\" stop-color=\"#FFF959\"></stop><stop offset=\".326\" stop-color=\"#0DF35E\"></stop><stop offset=\".64\" stop-color=\"#0BF2F9\"></stop><stop offset=\"1\" stop-color=\"#04A6F0\"></stop></radialGradient><linearGradient gradientUnits=\"userSpaceOnUse\" id=\"lobe-icons-kling-2-_R_0_\" x1=\"15.578\" x2=\"18.062\" y1=\"1.798\" y2=\"9.861\"><stop stop-color=\"#003EFF\"></stop><stop offset=\"1\" stop-color=\"#0BFFE7\"></stop></linearGradient><linearGradient gradientUnits=\"userSpaceOnUse\" id=\"lobe-icons-kling-3-_R_0_\" x1=\"8.422\" x2=\"5.938\" y1=\"22.142\" y2=\"14.079\"><stop stop-color=\"#003EFF\"></stop><stop offset=\"1\" stop-color=\"#0BFFE7\"></stop></linearGradient></defs></svg>", "Runway": "<svg aria-hidden=\"true\" fill=\"currentColor\" fill-rule=\"evenodd\" height=\"1em\" style=\"flex:none;line-height:1\" viewBox=\"0 0 24 24\" width=\"1em\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M17.86 22.992c-2.669.245-4.887-2.876-6.597-4.454C10.398 24.759 1 24.177 1 17.86V6.15c0-.921.244-1.861.733-2.65C2.635 1.977 4.383.98 6.15 1h11.71c6.316 0 6.918 9.398.677 10.243l2.97 2.951c3.252 3.064.808 8.929-3.646 8.797zm-1.428-3.721c1.842 1.898 4.774-1.034 2.876-2.876l-5.132-5.132H11.3v2.876l4.436 4.436.696.696zM4.12 17.842c-.037 2.632 4.117 2.632 4.06 0V6.132c.038-1.316-1.353-2.35-2.612-1.955-.057.019-.113.037-.15.056-.79.301-1.335 1.09-1.317 1.936v11.673h.02zm13.74-9.68c2.632.037 2.632-4.098 0-4.06h-6.973c.526 1.109.395 2.857.413 4.06h6.56z\"></path></svg>", "Hailuo": "<svg aria-hidden=\"true\" height=\"1em\" style=\"flex:none;line-height:1\" viewBox=\"0 0 24 24\" width=\"1em\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M24 12C24 5.373 18.6-.017 11.97 0 5.39.017.015 5.39 0 11.97-.017 18.6 5.373 24 12 24h7.885a4.108 4.108 0 004.108-4.108V12.4c.004-.133.007-.266.007-.4zM5.829 18.664c-1.91-1.63-3.088-4.24-3.033-6.9.004-.186.013-.372.03-.558v-.012c.277-3.174 2.327-6.134 5.2-7.509 2.874-1.375 6.466-1.112 9.11.664 2.644 1.777 4.243 5.004 4.056 8.184a11.38 11.38 0 01-.329 2.063c-.066.27-.147.549-.338.75-.19.201-.524.295-.75.134-.216-.154-.248-.456-.266-.72-.15-2.134-.72-4.335-2.162-5.915A6.636 6.636 0 0013.1 6.743a6.858 6.858 0 00-4.577 1.252c-1.099.787-1.962 1.914-2.38 3.2-.416 1.285-.374 2.726.175 3.962a5.24 5.24 0 001.9 2.24c1.467.963 3.475 1.1 5 .23 1.524-.87 2.435-2.758 2.047-4.47-.389-1.712-2.124-3.047-3.87-2.866-.266.027-.648-.002-.657-.27-.008-.207.241-.316.445-.353 1.771-.318 3.67.582 4.64 2.097.973 1.515 1.022 3.544.229 5.16-.794 1.615-2.37 2.795-4.118 3.221-2.357.575-4.491-.105-6.103-1.482h-.002z\" fill=\"url(#lobe-icons-hailuo-_R_0_)\"></path><defs><linearGradient gradientUnits=\"userSpaceOnUse\" id=\"lobe-icons-hailuo-_R_0_\" x1=\".539\" x2=\"27.487\" y1=\".884\" y2=\"27.022\"><stop offset=\".09\" stop-color=\"#FFAB0C\"></stop><stop offset=\".31\" stop-color=\"#FF5538\"></stop><stop offset=\".46\" stop-color=\"#E9405D\"></stop><stop offset=\".75\" stop-color=\"#D266DA\"></stop><stop offset=\".89\" stop-color=\"#D584EF\"></stop></linearGradient></defs></svg>", "Pika": "<svg aria-hidden=\"true\" fill=\"currentColor\" fill-rule=\"evenodd\" height=\"1em\" style=\"flex:none;line-height:1\" viewBox=\"0 0 24 24\" width=\"1em\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M.661 19.889h8.666c-.14-1.41-1.145-2.955-3.601-4.007v-.104c2.863.88 3.893 2.386 4.312 4.11H20.73l-1.72-1.476C20.017 15.244 24 13.747 24 13.747c-.141-2.541-1.441-4.909-5.787-6.827L8.326 3c.331 4.179 1.811 6.575 5.523 7.163v.102c-2.579-.064-4.368-1.216-5.275-3.588C.698 8.123-1.201 14.156.66 19.889z\"></path></svg>"};
+const AI_TOOLS=[
+  {name:"Sora",by:"OpenAI",url:"https://sora.chatgpt.com/"},
+  {name:"Veo",by:"Google Gemini",url:"https://gemini.google.com/"},
+  {name:"Kling",by:"Kuaishou",url:"https://klingai.com/"},
+  {name:"Runway",by:"Gen-4",url:"https://app.runwayml.com/"},
+  {name:"Hailuo",by:"MiniMax",url:"https://hailuoai.video/"},
+  {name:"Pika",by:"Pika Labs",url:"https://pika.art/"},
+];
+
+// ============ LANGUAGE ============
+// screen text follows the chosen language; the copied prompt is always English
+const LANGS=[{id:"ko",label:"한국어"},{id:"en",label:"English"},{id:"es",label:"Español"}];
+
+// Spanish names for every option (Korean lives in .label, English in .en)
+const ES={
+  western:"Viejo Oeste",scifi:"Ciencia ficción",fantasy:"Fantasía",modern:"Ciudad moderna",horror:"Terror",anime:"Anime",history:"Histórico",nature:"Naturaleza",romance:"Romance",action:"Acción",dystopia:"Distopía",mystery:"Misterio",sports:"Deportes",war:"Guerra",musical:"Musical",comedy:"Comedia",superhero:"Superhéroes",cyber:"Cyberpunk",idol:"K-pop",crime:"Thriller criminal",
+  w1:"Vaquero",w2:"Sheriff",w3:"Forajido",w4:"Guerrero nativo",w5:"Bailarina de salón",w6:"Caballo",w7:"Manada de ganado",w8:"Locomotora de vapor",w9:"Cazarrecompensas",w10:"Jugador",w11:"Buscador de oro",w12:"Cactus",
+  s1:"Astronauta",s2:"Alienígena",s3:"Robot",s4:"Nave espacial",s5:"Cíborg",s6:"Planeta",s7:"Ser de IA",s8:"Traje mecánico",s9:"Agujero de gusano",s10:"Holograma",s11:"Nebulosa",s12:"Máquina del tiempo",
+  f1:"Mago",f2:"Dragón",f3:"Elfa arquera",f4:"Caballero",f5:"Hada",f6:"Bruja",f7:"Orco",f8:"Fénix",f9:"Unicornio",f10:"Vampiro",f11:"Nigromante",f12:"Demonio",
+  m1:"Empresario",m2:"Adolescente",m3:"Detective",m4:"Deportivo",m5:"Multitud",m6:"Hacker",m7:"Enfermera",m8:"Chef",m9:"Periodista",m10:"Músico callejero",m11:"Influencer",m12:"Atleta",
+  h1:"Monstruo",h2:"Fantasma",h3:"Víctima",h4:"Zombis",h5:"Asesino enmascarado",h6:"Ente demoníaco",h7:"Muñeca poseída",h8:"Hombre lobo",h9:"Araña gigante",h10:"Secta",h11:"Sombra",h12:"Bruja malvada",
+  a1:"Protagonista",a2:"Villano",a3:"Colegiala",a4:"Mecha",a5:"Espíritu",a6:"Ninja",a7:"Samurái",a8:"Chica mágica",a9:"Rey demonio",a10:"Chica gato",a11:"Idol",a12:"Elegido",
+  hi1:"Guerrero",hi2:"Rey",hi3:"Samurái",hi4:"Soldado",hi5:"Gladiador",hi6:"Emperatriz",hi7:"Vikingo",hi8:"Faraón",hi9:"Arquero",hi10:"Monje",hi11:"Aristócrata",hi12:"Pirata",
+  n1:"Lobos",n2:"Águila",n3:"Oso",n4:"León",n5:"Ballena",n6:"Tiburón",n7:"Elefantes",n8:"Pantera",n9:"Zorro ártico",n10:"Gorila",n11:"Explorador",n12:"Búho",
+  r1:"Pareja",r2:"Protagonista masculino",r3:"Protagonista femenina",r4:"Boda",r5:"Expareja",r6:"Primer amor",r7:"Familia",r8:"Ramo de flores",r9:"Carta de amor",r10:"Rival amoroso",
+  ac1:"Héroe de acción",ac2:"Gánster",ac3:"Agente secreto",ac4:"Persecución",ac5:"Explosión",ac6:"Francotirador",ac7:"Asesino",ac8:"Policía encubierto",ac9:"Equipo SWAT",ac10:"Luchador MMA",ac11:"Fugitivo",ac12:"Parkour",
+  dy1:"Superviviente",dy2:"Rebelde",dy3:"Dictador",dy4:"Mutante",dy5:"Dron espía",dy6:"Chatarrero",
+  my1:"Detective",my2:"Sospechoso",my3:"Testigo",my4:"Femme fatale",my5:"Informante",my6:"Periodista",
+  sp1:"Futbolista",sp2:"Boxeador",sp3:"Velocista",sp4:"Nadador",sp5:"Baloncestista",sp6:"Entrenador",
+  wa1:"Soldado de infantería",wa2:"Piloto de caza",wa3:"Médico de campo",wa4:"General",wa5:"Tanque",wa6:"Francotirador",
+  mu1:"Cantante",mu2:"Bailarín",mu3:"Banda de rock",mu4:"Orquesta",mu5:"Artista callejero",mu6:"Director",
+  co1:"Payaso",co2:"Dúo cómico",co3:"Jefe despistado",co4:"Nerd",co5:"Abuela",co6:"Alienígena ingenuo",
+  su1:"Superhéroe",su2:"Supervillano",su3:"Compañero",su4:"Justiciero",su5:"Velocista",su6:"Equipo de héroes",
+  cy1:"Hacker",cy2:"Cíborg",cy3:"Netrunner",cy4:"IA rebelde",cy5:"Resistencia",cy6:"Traficante",
+  id1:"Grupo K-pop",id2:"Centro del grupo",id3:"Aprendiz",id4:"Fans",id5:"Regreso al escenario",id6:"Grupo rival",
+  cr1:"Ladrón",cr2:"Mafia",cr3:"Sicario",cr4:"Estafador",cr5:"Agente del FBI",cr6:"Rehén",
+  fa_smile:"Sonrisa suave",fa_grin:"Gran sonrisa",fa_shy:"Sonrisa tímida",fa_smirk:"Burla",fa_sinister:"Sonrisa siniestra",fa_teary:"Ojos llorosos",fa_smiletear:"Sonríe llorando",fa_sob:"Llanto",fa_angry:"Furia",fa_jaw:"Mandíbula apretada",fa_resolute:"Decidido",fa_surprise:"Sorpresa",fa_fear:"Miedo",fa_shock:"Conmoción",fa_flustered:"Avergonzado",fa_think:"Pensativo",fa_blank:"Sin expresión",fa_lonely:"Melancolía",fa_relief:"Alivio",fa_longing:"Añoranza",fa_love:"Enamorado",fa_doubt:"Sospecha",fa_wink:"Guiño",fa_tired:"Agotado",fa_awe:"Asombro",fa_pain:"Dolor",
+  gz_cam:"Mira a cámara",gz_away:"Aparta la mirada",gz_up:"Mira hacia arriba",gz_down:"Mirada baja",gz_side:"Mirada de reojo",gz_close:"Cierra los ojos",
+  ac_walk:"Camina despacio",ac_run:"Corre a toda velocidad",ac_fight:"Pelea intensa",ac_look:"Mira a lo lejos",ac_turn:"Se da la vuelta",ac_dance:"Baila",ac_fly:"Vuela",ac_talk:"Conversa",ac_cry:"Llora",ac_laugh:"Ríe a carcajadas",ac_hide:"Se esconde y observa",ac_explode:"Escapa de una explosión",
+  p_desert:"Desierto",p_city:"Ciudad de noche",p_forest:"Bosque profundo",p_space:"Espacio",p_rooftop:"Azotea",p_beach:"Playa",p_castle:"Castillo",p_street:"Callejón lluvioso",p_stage:"Escenario",p_ruins:"Ruinas",p_snow:"Montaña nevada",p_room:"Habitación",
+  l_gold:"Hora dorada",l_blue:"Hora azul",l_neon:"Neón",l_noir:"Sombras duras",l_soft:"Luz suave",l_back:"Contraluz",l_fire:"Luz de fuego",l_fog:"Niebla con rayos de luz",
+  st_cine:"Cinematográfico",st_real:"Fotorrealista",st_anime:"Estilo anime",st_pixar:"Animación 3D",st_vintage:"Película vintage",st_dream:"Onírico",st_epic:"Épico",st_dark:"Oscuro y tenso",
+  sh_wide:"Plano general",sh_full:"Plano entero",sh_med:"Plano medio",sh_close:"Primer plano",sh_ecu:"Primerísimo plano · ojos",
+  mv_static:"Fija",mv_in:"Acercarse despacio",mv_out:"Alejarse poco a poco",mv_up:"De abajo arriba",mv_down:"De arriba abajo",mv_lr:"Izquierda → derecha",mv_rl:"Derecha → izquierda",mv_diag:"Diagonal",mv_follow:"Seguir",mv_followout:"Seguir y alejarse",mv_crane:"Subir y alejarse",mv_orbit:"Vuelta completa",mv_top:"Vista cenital",mv_zoom:"Zoom rápido",mv_hand:"Cámara en mano",
+  an_eye:"A la altura de los ojos",an_low:"Contrapicado",an_high:"Picado",an_pov:"Primera persona",an_dutch:"Plano inclinado",
+  ql_arri:"Cámara de cine",ql_dof:"Fondo desenfocado",ql_sharp:"Nítido y detallado",ql_hdr:"4K HDR",
+  qc_teal:"Color de cine (verde azulado y naranja)",qc_warm:"Vintage cálido",qc_muted:"Tonos apagados",qc_vivid:"Colores vivos",
+  qm_nat:"Movimiento natural",qm_slow:"Cámara lenta",qm_blur:"Desenfoque de movimiento",qm_steady:"Imagen estable",
+  qp_same:"Misma cara siempre",qp_skin:"Piel natural",qp_eyes:"Mirada expresiva",qp_hands:"Manos correctas",
+  qf_rain:"Lluvia",qf_snow:"Nieve",qf_dust:"Partículas en el aire",qf_flare:"Destello de lente",qf_wind:"Viento en pelo y ropa",
+  qs_amb:"Sonido ambiente",qs_music:"Música épica",qs_sfx:"Pasos y efectos",qs_quiet:"Sin música, solo ambiente",
+  qa_blur:"Borroso",qa_face:"Caras o manos deformes",qa_text:"Texto y marcas de agua",qa_flicker:"Parpadeo",
+  tn_whisper:"Susurro",tn_calm:"Tono calmado",tn_cheer:"Alegre",tn_serious:"Serio",tn_angry:"Gritando con enfado",tn_sad:"Voz temblorosa",tn_sarcastic:"Sarcástico",tn_flirty:"Coqueto",tn_cold:"Frío",tn_heroic:"Heroico",tn_narr:"Narración documental",tn_news:"Presentador de noticias",tn_asmr:"ASMR",tn_comic:"Cómico",tn_accent:"Acento regional",tn_child:"Infantil",
+  "16:9":"16:9 horizontal","9:16":"9:16 vertical (Shorts)","1:1":"1:1 cuadrado","5":"5 s","8":"8 s","10":"10 s",
+};
+// English display names where the prompt phrase is too long to read as a label
+const EN={
+  sh_wide:"Wide shot",sh_full:"Full body",sh_med:"Medium · waist up",sh_close:"Close-up · face",sh_ecu:"Extreme close-up · eyes",
+  mv_static:"Static",mv_in:"Slow move in",mv_out:"Slowly pull away",mv_up:"Bottom to top",mv_down:"Top to bottom",mv_lr:"Left → right",mv_rl:"Right → left",mv_diag:"Diagonal",mv_follow:"Follow",mv_followout:"Follow and pull back",mv_crane:"Rise and pull away",mv_orbit:"Full orbit",mv_top:"Bird's-eye view",mv_zoom:"Fast zoom in",mv_hand:"Handheld",
+  an_eye:"Eye level",an_low:"Low angle",an_high:"High angle",an_pov:"First person",an_dutch:"Tilted (dutch)",
+  ql_arri:"Cinema camera look",ql_dof:"Blurred background",ql_sharp:"Sharp and detailed",ql_hdr:"4K HDR",
+  qc_teal:"Film colors (teal and orange)",qc_warm:"Warm vintage",qc_muted:"Muted tones",qc_vivid:"Vivid colors",
+  qm_nat:"Natural motion",qm_slow:"Slow motion",qm_blur:"Cinematic motion blur",qm_steady:"Steady picture",
+  qp_same:"Same face throughout",qp_skin:"Natural skin",qp_eyes:"Expressive eyes",qp_hands:"Correct hands",
+  qf_rain:"Rain",qf_snow:"Snow",qf_dust:"Floating particles",qf_flare:"Lens flare",qf_wind:"Wind in hair and clothes",
+  qs_amb:"Ambient sound",qs_music:"Epic music",qs_sfx:"Footsteps and effects",qs_quiet:"No music, ambience only",
+  qa_blur:"Blurry",qa_face:"Distorted faces or hands",qa_text:"Text and watermarks",qa_flicker:"Flicker",
+  tn_whisper:"Whisper",tn_calm:"Calm",tn_cheer:"Cheerful",tn_serious:"Serious",tn_angry:"Angry shouting",tn_sad:"Trembling voice",tn_sarcastic:"Sarcastic",tn_flirty:"Playful",tn_cold:"Cold",tn_heroic:"Heroic",tn_narr:"Documentary narration",tn_news:"News anchor",tn_asmr:"ASMR",tn_comic:"Comedic",tn_accent:"Regional accent",tn_child:"Childlike",
+  "16:9":"16:9 landscape","9:16":"9:16 vertical (Shorts)","1:1":"1:1 square","5":"5 s","8":"8 s","10":"10 s",
+};
+
+// screen text: Korean is the key, English and Spanish are the translations
+const UI={
+  "고르기만 하면 AI 영상 프롬프트가 완성돼요.":["Just pick, and your AI video prompt is ready.","Solo elige y tu prompt de video con IA estará listo."],
+  "언어":["Language","Idioma"],
+  "이름":["Name","Nombre"],
+  "예: 재보":["e.g. Jay","ej. Ana"],
+  "Pro 코드 (있으면)":["Pro code (if you have one)","Código Pro (si tienes)"],
+  "시작하기":["Start","Empezar"],
+  "게스트로 둘러보기":["Look around as a guest","Entrar como invitado"],
+  "테스트용 Pro 코드는 PRO-DEMO 입니다. 진짜 결제나 계정은 아직 연결되지 않았어요.":["The test Pro code is PRO-DEMO. Real payments and accounts are not connected yet.","El código Pro de prueba es PRO-DEMO. Aún no hay pagos ni cuentas reales."],
+  "이름을 넣어 주세요.":["Please enter your name.","Escribe tu nombre."],
+  "Pro 코드가 맞지 않아요. 비워 두면 일반으로 시작해요.":["That Pro code is wrong. Leave it empty to start as a free user.","El código Pro no es correcto. Déjalo vacío para empezar gratis."],
+  "게스트":["Guest","Invitado"],
+  "일반":["Free","Gratis"],
+  "나가기":["Log out","Salir"],
+  "Pro 사용자":["Pro user","Usuario Pro"],
+  "광고":["Ad","Anuncio"],
+  "광고 자리 (728×40) · Pro로 바꾸면 사라져요":["Ad space (728×40) · gone with Pro","Espacio publicitario (728×40) · desaparece con Pro"],
+  "광고 자리 (728×40) · 하단":["Ad space (728×40) · bottom","Espacio publicitario (728×40) · abajo"],
+  "광고 자리 (300×250)":["Ad space (300×250)","Espacio publicitario (300×250)"],
+  "{n}초 후 복사할 수 있어요":["You can copy in {n} s","Podrás copiar en {n} s"],
+  "닫고 복사하기":["Close and copy","Cerrar y copiar"],
+  "이전":["Back","Atrás"],
+  "다음":["Next","Siguiente"],
+  "프롬프트 완성":["Finish prompt","Terminar prompt"],
+  "실시간 프롬프트":["Live prompt","Prompt en vivo"],
+  "복사":["Copy","Copiar"],
+  "항목을 고르면 여기에 프롬프트가 바로 만들어져요.":["Pick items and your prompt appears here right away.","Elige opciones y el prompt aparece aquí al instante."],
+  "먼저 1단계에서 장르를 골라 주세요.":["Pick a genre in step 1 first.","Primero elige un género en el paso 1."],
+  "✍️ 직접 쓰기 · 이 단계에 넣고 싶은 말 (영어 권장)":["✍️ Write your own · anything to add in this step","✍️ Escribe tú · lo que quieras añadir en este paso (mejor en inglés)"],
+  "AI 바로가기":["AI shortcuts","Atajos de IA"],
+  "누르면 복사 + 사이트 열기":["Copies, then opens the site","Copia y abre el sitio"],
+  "{name} 열기 · 프롬프트 복사됨":["Opening {name} · prompt copied","Abriendo {name} · prompt copiado"],
+  "먼저 항목을 골라 프롬프트를 만들어 주세요":["Pick some items to build a prompt first","Primero elige opciones para crear el prompt"],
+  "복사했어요":["Copied","Copiado"],
+  "자동 복사가 막혀 있어요. 복사 버튼을 다시 눌러 주세요":["Copy was blocked. Please press the copy button again","No se pudo copiar. Pulsa el botón de copiar otra vez"],
+  "복사는 복사 버튼으로만 할 수 있어요":["Use the copy button to copy","Usa el botón de copiar para copiar"],
+  "유지":["Keep","Fijar"],
+  "유지 해제":["Unkeep","Quitar"],
+  "유지를 풀었어요":["No longer kept","Ya no está fijado"],
+  "유지했어요. 다음 영상에도 자동으로 들어가요":["Kept. It will be added to your next video too","Fijado. Se añadirá también en tu próximo video"],
+  "유지를 모두 풀었어요":["All kept words cleared","Se quitaron todas las fijadas"],
+  "아직 고른 항목이 없어요. 앞 단계에서 골라 주세요.":["Nothing picked yet. Choose in the earlier steps.","Aún no has elegido nada. Elige en los pasos anteriores."],
+  "피하기":["Avoid","Evitar"],
+  "설정":["Settings","Ajustes"],
+  "선택:":["Selected:","Elegido:"],
+  "위의 단어 조각을 하나 눌러 보세요.":["Tap one of the pieces above.","Toca una de las piezas de arriba."],
+  "유지 중 {n}개 · 처음부터 다시 만들어도 자동으로 들어가요":["{n} kept · added automatically when you start over","{n} fijadas · se añaden solas al empezar de nuevo"],
+  "유지 모두 해제":["Clear all kept","Quitar todas"],
+  "유지 기능은 Pro 전용이에요.":["Keep is a Pro feature.","Fijar es una función Pro."],
+  "최종 프롬프트 복사":["Copy final prompt","Copiar prompt final"],
+  "복사하면 영어 프롬프트로 바뀌어 복사돼요.":["","Al copiar, el prompt se copia en inglés."],
+  "게스트·일반 사용자는 복사 전에 짧은 광고가 두 번 나와요.":["Guests and free users see two short ads before copying.","Invitados y usuarios gratis ven dos anuncios cortos antes de copiar."],
+  "다음 광고 보기":["Next ad","Siguiente anuncio"],
+  "처음부터 다시 만들기":["Start over","Empezar de nuevo"],
+  "유지 기능은 Pro 전용이에요":["Keep is a Pro feature","Fijar es una función Pro"],
+  "이걸 쓰면 반복 작업이 없어져서 영상 작업 속도가 빨라져요. 자주 쓰는 카메라, 조명, 스타일을 한 번만 유지해 두면 다음 영상부터 자동으로 들어가요.":["This removes repetitive work so you make videos faster. Keep your usual camera, lighting and style once, and they are added to every next video.","Elimina el trabajo repetitivo y acelera tus videos. Fija una vez tu cámara, luz y estilo habituales y se añadirán a cada video nuevo."],
+  "Pro 코드":["Pro code","Código Pro"],
+  "예: PRO-DEMO":["e.g. PRO-DEMO","ej. PRO-DEMO"],
+  "Pro로 바꾸고 유지하기":["Switch to Pro and keep","Pasar a Pro y fijar"],
+  "나중에":["Later","Más tarde"],
+  "Pro 코드가 맞지 않아요.":["That Pro code is wrong.","El código Pro no es correcto."],
+  "표정":["Expression","Expresión"],
+  "시선":["Gaze","Mirada"],
+  "말투 · 대화 톤":["Voice · dialogue tone","Voz · tono del diálogo"],
+  "대사가 있거나 소리 나는 AI(Veo, Sora 등)에서 효과":["Works with dialogue or AIs that make sound (Veo, Sora…)","Sirve con diálogo o IAs con sonido (Veo, Sora…)"],
+  "화면 크기":["Frame size","Tamaño del plano"],
+  "사람이 얼마나 크게 보일지":["How big the person looks","Qué tan grande se ve la persona"],
+  "카메라 움직임":["Camera movement","Movimiento de cámara"],
+  "영상 동안 화면이 어떻게 움직일지":["How the frame moves during the video","Cómo se mueve el encuadre"],
+  "카메라 높이 · 각도":["Camera height · angle","Altura · ángulo de cámara"],
+  "파란 세모가 카메라":["Blue triangle = camera","Triángulo azul = cámara"],
+  "화면 비율":["Aspect ratio","Formato"],
+  "길이":["Length","Duración"],
+  "화질 · 렌즈":["Image · lens","Imagen · lente"],
+  "영화 카메라처럼 보이게":["Look like a cinema camera","Que parezca cámara de cine"],
+  "색감":["Color","Color"],
+  "한 가지만 고르는 게 좋아요":["Best to pick just one","Mejor elige solo uno"],
+  "움직임":["Motion","Movimiento"],
+  "영상이 덜 어색해져요":["Makes motion less awkward","El movimiento se ve más natural"],
+  "인물":["People","Personas"],
+  "얼굴·손이 덜 깨져요":["Fewer broken faces and hands","Menos caras y manos deformes"],
+  "날씨 · 효과":["Weather · effects","Clima · efectos"],
+  "소리":["Sound","Sonido"],
+  "소리까지 만드는 AI(Veo, Sora 등)에서 효과":["Works on AIs that make sound (Veo, Sora…)","Sirve en IAs con sonido (Veo, Sora…)"],
+  "넣으면 'Avoid:' 줄로 따로 붙어요":["Added as a separate 'Avoid:' line","Se añade como línea 'Avoid:' aparte"],
+};
+// step title, hint, placeholder per language
+const STEP_TEXT={
+  ko:[["장르","영상의 큰 세계관을 고르세요.","예: 1980s Seoul retro vibe"],["주인공","장르에 맞는 주인공이나 대상을 고르세요. 여러 개 고를 수 있어요.","예: a young woman in a red coat"],["표정 · 말투","인물의 얼굴 표정, 시선, 말투를 고르세요. 사람이 아니면 건너뛰어도 돼요.","예: she says \"I'm not afraid\" quietly"],["행동","주인공이 무엇을 하고 있나요?","예: slowly raising a glowing sword"],["장소","어디에서 벌어지는 장면인가요?","예: abandoned subway station"],["카메라","그림에서 실선 네모가 화면에 담기는 범위예요. 점선은 시작 위치, 주황 화살표는 카메라가 움직이는 방향이에요.","예: camera slowly circles then stops behind her"],["조명","빛과 시간대를 고르세요.","예: flickering street lamp"],["스타일","화면 느낌을 고르세요. 비율과 길이도 정해요.","예: red scarf blowing in the wind"],["품질 업","영상 AI가 더 좋은 화면을 만들게 돕는 문장들이에요. 필요한 것만 여러 개 고르세요.","예: ultra realistic, no cuts"],["최종 프롬프트","단어 조각을 누르고 '유지'를 누르면, 다음 영상 때 그 단어가 자동으로 들어가요. 주황색이 유지된 단어예요.",""]],
+  en:[["Genre","Pick the world of your video.","e.g. 1980s Seoul retro vibe"],["Subject","Pick who or what is in it. You can pick several.","e.g. a young woman in a red coat"],["Face · voice","Pick the facial expression, gaze and tone of voice. Skip if there is no person.","e.g. trembling lips, holding back tears"],["Action","What is the subject doing?","e.g. slowly raising a glowing sword"],["Place","Where does the scene happen?","e.g. abandoned subway station"],["Camera","The solid box is what the frame shows. The dotted box is where it starts, and the orange arrow is the direction the camera moves.","e.g. camera slowly circles then stops behind her"],["Light","Pick the light and time of day.","e.g. flickering street lamp"],["Style","Pick the look, plus aspect ratio and length.","e.g. red scarf blowing in the wind"],["Quality","Phrases that help video AIs make a better picture. Pick only what you need.","e.g. ultra realistic, no cuts"],["Final prompt","Tap a piece, then press 'Keep' to add it automatically next time. Orange pieces are kept.",""]],
+  es:[["Género","Elige el mundo de tu video.","ej. 1980s Seoul retro vibe"],["Protagonista","Elige quién o qué aparece. Puedes elegir varios.","ej. a young woman in a red coat"],["Expresión · voz","Elige la expresión, la mirada y el tono de voz. Sáltalo si no hay personas.","ej. trembling lips, holding back tears"],["Acción","¿Qué está haciendo?","ej. slowly raising a glowing sword"],["Lugar","¿Dónde ocurre la escena?","ej. abandoned subway station"],["Cámara","El recuadro sólido es lo que se ve en pantalla. El punteado es donde empieza y la flecha naranja indica hacia dónde se mueve la cámara.","ej. camera slowly circles then stops behind her"],["Luz","Elige la luz y la hora del día.","ej. flickering street lamp"],["Estilo","Elige el aspecto, el formato y la duración.","ej. red scarf blowing in the wind"],["Calidad","Frases que ayudan a la IA a crear mejor imagen. Elige solo lo necesario.","ej. ultra realistic, no cuts"],["Prompt final","Toca una pieza y pulsa 'Fijar' para que se añada sola la próxima vez. Las piezas naranjas están fijadas.",""]],
+};
+
+// ============ STEPS ============
+// each step lists option groups; a group's key is where its choice is stored in S.v
+const STEPS=[
+  {groups:()=>[{key:"genre",list:GENRES}]},
+  {groups:()=>S.v.genre?[{key:"subject",multi:true,list:SUBJECTS[S.v.genre]||[]}]:null},
+  {groups:()=>[{key:"face",title:"표정",list:FACES},{key:"gaze",title:"시선",list:GAZES},{key:"tone",title:"말투 · 대화 톤",note:"대사가 있거나 소리 나는 AI(Veo, Sora 등)에서 효과",list:TONES}]},
+  {groups:()=>[{key:"action",list:ACTIONS}]},
+  {groups:()=>[{key:"place",list:PLACES}]},
+  {groups:()=>[
+    {key:"shot",title:"화면 크기",note:"사람이 얼마나 크게 보일지",list:SHOTS,cam:true},
+    {key:"move",title:"카메라 움직임",note:"영상 동안 화면이 어떻게 움직일지",list:MOVES,cam:true},
+    {key:"angle",title:"카메라 높이 · 각도",note:"파란 세모가 카메라",list:ANGLES,cam:true}]},
+  {groups:()=>[{key:"light",list:LIGHTS}]},
+  {groups:()=>[{key:"style",list:STYLES},{key:"ratio",title:"화면 비율",list:RATIOS,fixed:true},{key:"dur",title:"길이",list:DURATIONS,fixed:true}]},
+  {groups:()=>QUALITY.map(q=>({key:q.key,title:q.title,note:q.note,multi:true,list:q.list}))},
+  {final:true},
+];
+const LAST=STEPS.length-1;
+const SINGLE_KEYS=["genre","face","gaze","tone","action","place","shot","move","angle","light","style"];
+const LISTS={genre:GENRES,face:FACES,gaze:GAZES,tone:TONES,action:ACTIONS,place:PLACES,shot:SHOTS,move:MOVES,angle:ANGLES,light:LIGHTS,style:STYLES};
+QUALITY.forEach(q=>LISTS[q.key]=q.list);
+
+// ============ STATE ============
+const freshV=()=>({genre:null,subject:[],ratio:"16:9",dur:"8",...Object.fromEntries(QUALITY.map(q=>[q.key,[]]))});
+const S={user:null,step:0,v:freshV(),custom:{},pick:null,modal:null,toast:""};
+let KEEP=[],LANG="ko";
+try{const u=JSON.parse(localStorage.getItem("pc_user")||"null");if(u&&u.name)S.user=u;}catch(e){}
+try{const k=JSON.parse(localStorage.getItem("pc_keep")||"[]");if(Array.isArray(k))KEEP=k;}catch(e){}
+try{const l=localStorage.getItem("pc_lang");if(LANGS.some(x=>x.id===l))LANG=l;}catch(e){}
+const saveKeep=()=>{try{localStorage.setItem("pc_keep",JSON.stringify(KEEP));}catch(e){}};
+const isPro=()=>!!(S.user&&S.user.pro);
+const find=(list,id)=>(list||[]).find(x=>x.id===id);
+const isKept=key=>isPro()&&KEEP.includes(key);
+function setLang(l){LANG=l;try{localStorage.setItem("pc_lang",l);}catch(e){}document.documentElement.lang=l;render();}
+
+// ============ TEXT ============
+function tr(s,vars){
+  let out=s;
+  if(LANG!=="ko"){const row=UI[s];if(row)out=row[LANG==="en"?0:1];}
+  if(vars)Object.keys(vars).forEach(k=>out=out.replace("{"+k+"}",vars[k]));
+  return out;
+}
+const stepText=i=>STEP_TEXT[LANG][i];
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const emojiOf=label=>{const m=/^([^\p{L}\p{N}]+)\s/u.exec(label||"");return m?m[1]+" ":"";};
+// option name in the screen language (with emoji) and without emoji for the preview
+function oname(o){
+  if(LANG==="ko")return o.label;
+  const n=LANG==="en"?(EN[o.id]||cap(o.en||o.label)):(ES[o.id]||o.label);
+  return emojiOf(o.label)+n;
+}
+const plain=o=>oname(o).replace(/^[^\p{L}\p{N}]+\s/u,"");
+// the English phrase under each option, skipped where it would repeat the name
+const osub=o=>o.en&&!(LANG==="en"&&!EN[o.id])?o.en:"";
+
+// put every kept word back in (Pro only)
+function applyKept(){
+  if(!isPro())return;
+  KEEP.forEach(k=>{
+    const i=k.indexOf(":"),g=k.slice(0,i),id=k.slice(i+1);
+    if(g==="extra"){S.custom[7]=id;return;}
+    if(/^c\d+$/.test(g)){S.custom[+g.slice(1)]=id;return;}
+    if(g==="fmt"){const [r,d]=id.split("|");S.v.ratio=r;S.v.dur=d;return;}
+    if(Array.isArray(S.v[g])){if(!S.v[g].includes(id))S.v[g].push(id);}
+    else S.v[g]=id;
+  });
+}
+function resetAll(){S.v=freshV();S.custom={};S.pick=null;S.step=0;applyKept();}
+
+// ============ PROMPT ============
+// segments: one per chosen word so each can be picked and kept.
+// text = English (what gets copied), view = screen language (what is shown)
+function segments(){
+  const out=[],avoid=[];
+  const opt=(g,o)=>out.push({key:g+":"+o.id,text:o.en,view:plain(o)});
+  const one=g=>{const o=find(LISTS[g],S.v[g]);if(o)opt(g,o);};
+  const cust=i=>{const c=(S.custom[i]||"").trim();if(c)out.push({key:"c"+i+":"+c,text:c,view:c});};
+  ["shot","move","angle"].forEach(one);cust(5);
+  (SUBJECTS[S.v.genre]||[]).filter(x=>S.v.subject.includes(x.id)).forEach(o=>opt("subject",o));cust(1);
+  ["face","gaze","tone"].forEach(one);cust(2);
+  one("action");cust(3);
+  one("place");cust(4);
+  const gn=find(GENRES,S.v.genre);if(gn)out.push({key:"genre:"+gn.id,text:gn.en+" setting",view:plain(gn)});cust(0);
+  one("light");cust(6);
+  one("style");cust(7);
+  QUALITY.forEach(q=>q.list.filter(o=>S.v[q.key].includes(o.id)).forEach(o=>{
+    (q.avoid?avoid:out).push({key:q.key+":"+o.id,text:o.en,view:plain(o)});
+  }));cust(8);
+  const fmt=S.step>=7?{key:"fmt:"+S.v.ratio+"|"+S.v.dur,text:`--ar ${S.v.ratio} --duration ${S.v.dur}s`,
+    view:plain(find(RATIOS,S.v.ratio))+" · "+plain(find(DURATIONS,S.v.dur))}:null;
+  return {out,avoid,fmt};
+}
+// the English prompt that gets copied
+function buildPrompt(){
+  const {out,avoid,fmt}=segments();
+  if(!out.length&&!avoid.length)return "";
+  let t=out.map(s=>s.text).join(", ");
+  if(t)t=cap(t)+".";
+  if(avoid.length)t+=(t?"\n":"")+"Avoid: "+avoid.map(s=>s.text).join(", ")+".";
+  if(fmt)t+="\n"+fmt.text;
+  return t;
+}
+// the same prompt shown in the screen language, kept words colored
+function previewHtml(){
+  const {out,avoid,fmt}=segments();
+  if(!out.length&&!avoid.length)return "";
+  const span=s=>`<span class="pv${isKept(s.key)?" kept":""}">${esc(s.view)}</span>`;
+  let h=out.map(span).join(", ");
+  if(avoid.length)h+=(h?"\n":"")+tr("피하기")+": "+avoid.map(span).join(", ");
+  if(fmt)h+="\n"+span(fmt);
+  return h;
+}
+
+// ============ CAMERA DIAGRAMS ============
+function person(cx,cy,s,cls){
+  const h=cy-14*s;
+  return `<g class="fig ${cls||""}"><circle cx="${cx}" cy="${h}" r="${4*s}"/><path d="M${cx} ${cy-10*s}V${cy+4*s}M${cx-7*s} ${cy-3*s}L${cx} ${cy-8*s}L${cx+7*s} ${cy-3*s}M${cx-6*s} ${cy+16*s}L${cx} ${cy+4*s}L${cx+6*s} ${cy+16*s}"/></g>`;
+}
+function arrow(x1,y1,x2,y2){
+  const a=Math.atan2(y2-y1,x2-x1),L=6;
+  const p=(d)=>[x2-L*Math.cos(a+d),y2-L*Math.sin(a+d)].map(n=>n.toFixed(1)).join(",");
+  return `<line class="ar" x1="${x1}" y1="${y1}" x2="${(x2-3*Math.cos(a)).toFixed(1)}" y2="${(y2-3*Math.sin(a)).toFixed(1)}"/><polygon class="arh" points="${x2},${y2} ${p(.45)} ${p(-.45)}"/>`;
+}
+const rect=(r,cls)=>`<rect class="${cls}" x="${r[0]}" y="${r[1]}" width="${r[2]}" height="${r[3]}" rx="2"/>`;
+function diagram(d){
+  let g="";
+  if(d.shot){g=person(48,36,1.4)+rect(d.shot,"fr");}
+  else if(d.orbit){g=person(48,34,.75)+`<ellipse class="ar" cx="48" cy="46" rx="38" ry="11"/>`+arrow(70,56.5,78,55)+`<polygon class="cam" points="14,40 22,44 14,48"/>`;}
+  else if(d.top){g=rect([22,6,52,52],"fr")+`<g class="fig"><ellipse cx="48" cy="32" rx="10" ry="5"/><circle cx="48" cy="32" r="4"/></g>`+arrow(10,6,10,40);}
+  else if(d.hand){g=person(48,34,.75)+`<rect class="fr0" x="26" y="11" width="40" height="40" rx="2" transform="rotate(-5 46 31)"/>`+rect([30,13,40,40],"fr")+`<path class="ar" d="M22 60l6-4 6 4 6-4 6 4 6-4 6 4 6-4 6 4"/>`;}
+  else if(d.cam){g=person(64,36,.85)+`<line class="sight" x1="${d.cam[0]+6}" y1="${d.cam[1]}" x2="${d.to[0]}" y2="${d.to[1]}"/><polygon class="cam" points="${d.cam[0]},${d.cam[1]-4} ${d.cam[0]+8},${d.cam[1]} ${d.cam[0]},${d.cam[1]+4}"/>`;}
+  else if(d.pov){g=rect([6,4,84,56],"fr")+`<g class="fig"><path d="M30 60c0-8 4-12 8-12s6 4 6 12M66 60c0-8-4-12-8-12s-6 4-6 12"/></g>`+`<circle class="arh" cx="48" cy="26" r="2"/>`;}
+  else if(d.dutch){g=person(48,34,.85)+`<rect class="fr" x="26" y="10" width="44" height="44" rx="2" transform="rotate(-14 48 32)"/>`;}
+  else{
+    if(d.follow){const sx=d.s[0]+d.s[2]/2,ex=d.e[0]+d.e[2]/2;g+=person(sx,d.s[1]+d.s[3]/2,.7,"fig-ghost")+person(ex,d.e[1]+d.e[3]/2,.7);}
+    else g+=person(48,34,.75);
+    if(d.s)g+=rect(d.s,"fr0");
+    g+=rect(d.e,"fr");
+    if(d.s){
+      const c=r=>[r[0]+r[2]/2,r[1]+r[3]/2],[x1,y1]=c(d.s),[x2,y2]=c(d.e);
+      if(Math.hypot(x2-x1,y2-y1)<10){g+=arrow(d.s[0],d.s[1],d.e[0],d.e[1])+arrow(d.s[0]+d.s[2],d.s[1]+d.s[3],d.e[0]+d.e[2],d.e[1]+d.e[3]);
+        if(d.fast)g+=arrow(d.s[0]+d.s[2],d.s[1],d.e[0]+d.e[2],d.e[1])+arrow(d.s[0],d.s[1]+d.s[3],d.e[0],d.e[1]+d.e[3]);}
+      else if(d.follow)g+=arrow(x1,62,x2,62);
+      else g+=arrow(x1,y1,x2,y2);
+    }
+  }
+  return `<svg class="dg" viewBox="0 0 96 64" aria-hidden="true">${g}</svg>`;
+}
+
+// ============ COPY ============
+// the prompt areas cannot be selected or copied by hand; only the copy buttons copy
+let allowCopy=false;
+["copy","cut"].forEach(ev=>document.addEventListener(ev,e=>{
+  if(allowCopy)return;
+  const sel=getSelection(),n=sel&&sel.anchorNode;
+  const el=n&&(n.nodeType===1?n:n.parentElement);
+  if(el&&el.closest(".noselect")){e.preventDefault();toast(tr("복사는 복사 버튼으로만 할 수 있어요"));}
+}));
+["contextmenu","dragstart","selectstart"].forEach(ev=>document.addEventListener(ev,e=>{
+  if(e.target.closest&&e.target.closest(".noselect"))e.preventDefault();
+}));
+function toast(msg){S.toast=msg;render();clearTimeout(toast.t);toast.t=setTimeout(()=>{S.toast="";render();},1900);}
+function copyText(text,okMsg){
+  const ok=()=>toast(okMsg||tr("복사했어요"));
+  try{navigator.clipboard.writeText(text).then(ok,()=>legacyCopy(text,ok));}
+  catch(e){legacyCopy(text,ok);}
+}
+function legacyCopy(text,ok){
+  const ta=document.createElement("textarea");
+  ta.value=text;ta.setAttribute("readonly","");ta.style.cssText="position:fixed;top:0;left:0;opacity:0";
+  document.body.appendChild(ta);ta.select();
+  allowCopy=true;let done=false;
+  try{done=document.execCommand("copy");}catch(e){}
+  allowCopy=false;ta.remove();
+  done?ok():toast(tr("자동 복사가 막혀 있어요. 복사 버튼을 다시 눌러 주세요"));
+}
+function copyLive(){const t=buildPrompt();if(t)copyText(t);}
+// final prompt: guests see the ad popup first
+function copyFinal(){
+  const t=buildPrompt();if(!t)return;
+  if(isPro()){copyText(t);return;}
+  startAd(1);
+}
+// two 5-second ads in a row before the copy
+function startAd(n){
+  S.modal={type:"ad",left:5,n};render();
+  const tick=setInterval(()=>{
+    if(!S.modal||S.modal.type!=="ad"){clearInterval(tick);return;}
+    S.modal.left--;render();
+    if(S.modal.left<=0)clearInterval(tick);
+  },1000);
+}
+
+// ============ KEEP ============
+function toggleKeep(){
+  if(!S.pick)return;
+  if(!isPro()){S.modal={type:"pro",err:""};render();return;}
+  if(KEEP.includes(S.pick)){KEEP=KEEP.filter(k=>k!==S.pick);toast(tr("유지를 풀었어요"));}
+  else{
+    // one kept value per single-choice group
+    const g=S.pick.split(":")[0];
+    if(SINGLE_KEYS.includes(g)||/^c\d+$/.test(g)||g==="fmt")KEEP=KEEP.filter(k=>k.split(":")[0]!==g);
+    KEEP.push(S.pick);toast(tr("유지했어요. 다음 영상에도 자동으로 들어가요"));
+  }
+  saveKeep();
+}
+
+// ============ RENDER ============
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const app=document.getElementById("app");
+
+function AdBarBanner(){
+  if(isPro())return "";
+  return `<div class="adbar-zone"><div class="wrap"><div class="adbar" role="complementary" aria-label="${tr("광고")}">
+    <span class="adtag">AD</span><b>${tr("광고 자리 (728×40) · Pro로 바꾸면 사라져요")}</b><span class="adtag">${tr("광고")}</span>
+  </div></div></div>`;
+}
+function AdBottomBanner(){
+  return `<div class="adbar" role="complementary" aria-label="${tr("광고")}"><span class="adtag">AD</span><b>${tr("광고 자리 (728×40) · 하단")}</b><span class="adtag">${tr("광고")}</span></div>`;
+}
+const langPick=()=>`<div class="langs" role="group" aria-label="${tr("언어")}">${LANGS.map(l=>`<button type="button" class="lang${l.id===LANG?" on":""}" data-lang="${l.id}" aria-pressed="${l.id===LANG}">${l.label}</button>`).join("")}</div>`;
+
+function renderLogin(){
+  app.innerHTML=`<div class="wrap login"><form class="login-card" id="loginForm">
+    ${langPick()}
+    <div class="logo">Shot<span>Craft</span></div>
+    <p>${tr("고르기만 하면 AI 영상 프롬프트가 완성돼요.")}</p>
+    <div class="field"><label for="nameIn">${tr("이름")}</label><input type="text" id="nameIn" autocomplete="name" placeholder="${tr("예: 재보")}"></div>
+    <div class="field"><label for="codeIn">${tr("Pro 코드 (있으면)")}</label><input type="text" id="codeIn" placeholder="${tr("예: PRO-DEMO")}"></div>
+    <div class="err" id="loginErr" hidden></div>
+    <button class="btn primary" type="submit">${tr("시작하기")}</button>
+    <button class="btn" type="button" id="guestBtn">${tr("게스트로 둘러보기")}</button>
+    <div class="note">${tr("테스트용 Pro 코드는 PRO-DEMO 입니다. 진짜 결제나 계정은 아직 연결되지 않았어요.")}</div>
+  </form>${AdBottomBanner()}</div>`;
+  app.querySelectorAll(".lang").forEach(b=>b.onclick=()=>{
+    const n=document.getElementById("nameIn").value,c=document.getElementById("codeIn").value;
+    setLang(b.dataset.lang);
+    document.getElementById("nameIn").value=n;document.getElementById("codeIn").value=c;
+  });
+  document.getElementById("loginForm").onsubmit=e=>{
+    e.preventDefault();
+    const name=document.getElementById("nameIn").value.trim();
+    const code=document.getElementById("codeIn").value.trim().toUpperCase();
+    const err=document.getElementById("loginErr");
+    if(!name){err.textContent=tr("이름을 넣어 주세요.");err.hidden=false;return;}
+    if(code&&code!=="PRO-DEMO"){err.textContent=tr("Pro 코드가 맞지 않아요. 비워 두면 일반으로 시작해요.");err.hidden=false;return;}
+    login({name,pro:code==="PRO-DEMO"});
+  };
+  document.getElementById("guestBtn").onclick=()=>login({name:"guest",pro:false,guest:true});
+}
+function saveUser(){try{localStorage.setItem("pc_user",JSON.stringify(S.user));}catch(e){}}
+function login(u){S.user=u;saveUser();resetAll();render();}
+function logout(){S.user=null;try{localStorage.removeItem("pc_user");}catch(e){}S.v=freshV();S.custom={};S.step=0;S.pick=null;render();}
+
+function optGrid(gr){
+  const sel=S.v[gr.key];
+  return `<div class="grid${gr.cam?" cam":""}">${gr.list.map(o=>{
+    const on=gr.multi?sel.includes(o.id):sel===o.id;
+    const kept=isKept(gr.key+":"+o.id);
+    const sub=osub(o);
+    return `<button class="opt${on?" on":""}${kept?" kept":""}" aria-pressed="${on}" data-k="${gr.key}" data-id="${esc(o.id)}">${o.dg?diagram(o.dg):""}${kept?`<span class="kbadge">${tr("유지")}</span>`:""}<span class="oname">${esc(oname(o))}</span>${sub?`<small>${esc(sub)}</small>`:""}</button>`;
+  }).join("")}</div>`;
+}
+function stepDone(i){
+  const st=STEPS[i];if(st.final)return false;
+  const gs=st.groups();if(!gs)return false;
+  return gs.some(g=>!g.fixed&&(Array.isArray(S.v[g.key])?S.v[g.key].length:S.v[g.key]))||!!(S.custom[i]||"").trim();
+}
+function stepBody(){
+  const st=STEPS[S.step];
+  if(st.final)return finalBody();
+  const gs=st.groups();
+  const box=`<div class="field custom"><label for="cust${S.step}">${tr("✍️ 직접 쓰기 · 이 단계에 넣고 싶은 말 (영어 권장)")}</label><input type="text" id="cust${S.step}" data-cust="${S.step}" value="${esc(S.custom[S.step]||"")}" placeholder="${esc(stepText(S.step)[2])}"></div>`;
+  if(!gs)return `<p class="hint">${tr("먼저 1단계에서 장르를 골라 주세요.")}</p>`+box;
+  return gs.map(g=>`<div class="group">${g.title?`<div class="group-h"><span class="label">${esc(tr(g.title))}</span>${g.note?`<span class="note">${esc(tr(g.note))}</span>`:""}</div>`:""}${optGrid(g)}</div>`).join("")+box;
+}
+function segBtn(s){
+  return `<button class="seg${isKept(s.key)?" kept":""}${S.pick===s.key?" pick":""}" data-seg="${esc(s.key)}" aria-pressed="${S.pick===s.key}">${esc(s.view)}</button>`;
+}
+function finalBody(){
+  const {out,avoid,fmt}=segments(),t=buildPrompt();
+  const all=[...out,...avoid,...(fmt?[fmt]:[])];
+  const picked=all.find(s=>s.key===S.pick);
+  if(!picked)S.pick=null;
+  const keptOn=picked&&isKept(picked.key);
+  const enNote=tr("복사하면 영어 프롬프트로 바뀌어 복사돼요.");
+  return `
+    <div class="noselect" style="display:grid;gap:10px">
+    <div class="segs" aria-label="prompt">${out.map(segBtn).join("")||`<span class="note">${tr("아직 고른 항목이 없어요. 앞 단계에서 골라 주세요.")}</span>`}</div>
+    ${avoid.length?`<div class="segs"><span class="seg-label">${tr("피하기")}</span>${avoid.map(segBtn).join("")}</div>`:""}
+    ${fmt?`<div class="segs"><span class="seg-label">${tr("설정")}</span>${segBtn(fmt)}</div>`:""}
+    </div>
+    <div class="keepbar">
+      <span class="what">${picked?`${tr("선택:")} <b>${esc(picked.view)}</b>`:tr("위의 단어 조각을 하나 눌러 보세요.")}</span>
+      <button class="keepbtn${keptOn?" off":""}" id="keepBtn" ${picked?"":"disabled"}>${keptOn?tr("유지 해제"):tr("유지")}</button>
+    </div>
+    ${isPro()?`<div class="keepinfo"><span>${tr("유지 중 {n}개 · 처음부터 다시 만들어도 자동으로 들어가요",{n:KEEP.length})}</span>${KEEP.length?`<button class="linkbtn" id="clearKeep">${tr("유지 모두 해제")}</button>`:""}</div>`
+      :`<div class="keepinfo"><span>${tr("유지 기능은 Pro 전용이에요.")}</span></div>`}
+    ${LANG==="en"&&t?`<pre class="prompt final noselect">${esc(t)}</pre>`:""}
+    <button class="copy big" id="copyFinal" ${t?"":"disabled"}>${tr("최종 프롬프트 복사")}</button>
+    ${enNote?`<div class="note">${enNote}</div>`:""}
+    ${isPro()?"":`<div class="note">${tr("게스트·일반 사용자는 복사 전에 짧은 광고가 두 번 나와요.")}</div>`}
+    <button class="btn" id="resetBtn">${tr("처음부터 다시 만들기")}</button>`;
+}
+function modalHtml(){
+  if(!S.modal)return "";
+  if(S.modal.type==="ad")return `<div class="modal" role="dialog" aria-modal="true" aria-label="${tr("광고")}"><div class="modal-card">
+    <div class="label">${tr("광고")} ${S.modal.n}/2</div>
+    <div class="adbox">${tr("광고 자리 (300×250)")}</div>
+    <button class="btn primary" id="adClose" ${S.modal.left>0?"disabled":""}>${S.modal.left>0?tr("{n}초 후 복사할 수 있어요",{n:`<span class="count">${S.modal.left}</span>`}):(S.modal.n<2?tr("다음 광고 보기"):tr("닫고 복사하기"))}</button>
+  </div></div>`;
+  return `<div class="modal" role="dialog" aria-modal="true" aria-label="Pro"><form class="modal-card left" id="proForm">
+    <h3>${tr("유지 기능은 Pro 전용이에요")}</h3>
+    <p>${tr("이걸 쓰면 반복 작업이 없어져서 영상 작업 속도가 빨라져요. 자주 쓰는 카메라, 조명, 스타일을 한 번만 유지해 두면 다음 영상부터 자동으로 들어가요.")}</p>
+    <div class="field"><label for="proCode">${tr("Pro 코드")}</label><input type="text" id="proCode" placeholder="${tr("예: PRO-DEMO")}"></div>
+    ${S.modal.err?`<div class="err">${esc(S.modal.err)}</div>`:""}
+    <button class="btn primary" type="submit">${tr("Pro로 바꾸고 유지하기")}</button>
+    <button class="btn" type="button" id="proClose">${tr("나중에")}</button>
+  </form></div>`;
+}
+
+function renderMain(){
+  const t=buildPrompt(),pv=previewHtml();
+  const fin=STEPS[S.step].final;
+  const name=S.user.guest?"":S.user.proName?tr("Pro 사용자"):S.user.name;
+  app.innerHTML=`
+  <header><div class="wrap hrow">
+    <div class="logo">Shot<span>Craft</span></div>
+    <div class="who">${name?`<span class="uname">${esc(name)}</span>`:""}<span class="pill${isPro()?" pro":""}">${isPro()?"Pro":S.user.guest?tr("게스트"):tr("일반")}</span>
+      <select id="langSel" aria-label="${tr("언어")}">${LANGS.map(l=>`<option value="${l.id}"${l.id===LANG?" selected":""}>${l.label}</option>`).join("")}</select>
+      <button class="linkbtn" id="logoutBtn">${tr("나가기")}</button></div>
+  </div></header>
+  ${AdBarBanner()}
+  <main class="wrap"><div class="layout"><div class="col">
+    <nav class="steps" aria-label="steps">${STEPS.map((s,i)=>`<button class="chip${i===S.step?" on":""}${stepDone(i)?" done":""}" data-step="${i}"><span class="n">${i+1}</span>${stepText(i)[0]}</button>`).join("")}</nav>
+    <section class="panel">
+      <h2>${S.step+1}. ${stepText(S.step)[0]}</h2>
+      <p class="hint">${stepText(S.step)[1]}</p>
+      ${stepBody()}
+      <div class="nav">
+        <button class="btn" id="prevBtn" ${S.step===0?"disabled":""}>${tr("이전")}</button>
+        ${!fin?`<button class="btn primary" id="nextBtn">${S.step===LAST-1?tr("프롬프트 완성"):tr("다음")}</button>`:""}
+      </div>
+    </section>
+    ${!fin?`<section class="live" aria-live="polite">
+      <div class="live-h"><span class="label">${tr("실시간 프롬프트")}</span><button class="copy" id="copyLive" ${t?"":"disabled"}>${tr("복사")}</button></div>
+      <pre class="prompt noselect${pv?"":" empty"}" id="liveText">${pv||tr("항목을 고르면 여기에 프롬프트가 바로 만들어져요.")}</pre>
+    </section>`:""}
+  </div>
+  <aside class="ai" aria-label="${tr("AI 바로가기")}">
+    <div class="label">${tr("AI 바로가기")}</div>
+    <p>${tr("누르면 복사 + 사이트 열기")}</p>
+    <div class="ai-list">${AI_TOOLS.map((a,i)=>`<a class="ai-btn" href="${a.url}" target="_blank" rel="noopener" data-ai="${i}" title="${a.name} (${a.by})" aria-disabled="${t?"false":"true"}"><span class="ai-ic">${AI_ICONS[a.name]||""}</span><span class="ai-nm">${a.name}</span><span class="go">↗</span></a>`).join("")}</div>
+  </aside>
+  </div></main>
+  ${isPro()?"":`<div class="wrap adfoot">${AdBottomBanner()}</div>`}
+  ${modalHtml()}
+  ${S.toast?`<div class="toast" role="status">${esc(S.toast)}</div>`:""}`;
+  bind();
+}
+
+function bind(){
+  const on=(id,fn)=>{const el=document.getElementById(id);if(el)el.onclick=fn;};
+  const go=i=>{S.step=i;S.pick=null;render();scrollTo(0,0);};
+  app.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+    const k=b.dataset.k,id=b.dataset.id,cur=S.v[k];
+    if(Array.isArray(cur))S.v[k]=cur.includes(id)?cur.filter(x=>x!==id):[...cur,id];
+    else if(k==="genre"){if(cur!==id){S.v.genre=id;S.v.subject=[];}}
+    else if(k==="ratio"||k==="dur")S.v[k]=id;
+    else S.v[k]=cur===id?null:id;
+    render();
+  });
+  app.querySelectorAll(".chip").forEach(b=>b.onclick=()=>go(+b.dataset.step));
+  app.querySelectorAll(".seg").forEach(b=>b.onclick=()=>{S.pick=S.pick===b.dataset.seg?null:b.dataset.seg;render();});
+  on("prevBtn",()=>go(Math.max(0,S.step-1)));
+  on("nextBtn",()=>go(Math.min(LAST,S.step+1)));
+  on("copyLive",copyLive);
+  on("copyFinal",copyFinal);
+  on("keepBtn",()=>{toggleKeep();render();});
+  on("clearKeep",()=>{KEEP=[];saveKeep();toast(tr("유지를 모두 풀었어요"));});
+  on("adClose",()=>{if(S.modal&&S.modal.left<=0&&S.modal.n<2){startAd(2);return;}if(S.modal&&S.modal.left<=0){const t=buildPrompt();S.modal=null;render();if(t)copyText(t);}});
+  on("proClose",()=>{S.modal=null;render();});
+  const pf=document.getElementById("proForm");
+  if(pf)pf.onsubmit=e=>{
+    e.preventDefault();
+    const code=document.getElementById("proCode").value.trim().toUpperCase();
+    if(code!=="PRO-DEMO"){S.modal.err=tr("Pro 코드가 맞지 않아요.");render();return;}
+    S.user={...S.user,pro:true,guest:false,proName:!!S.user.guest};saveUser();
+    S.modal=null;toggleKeep();render();
+  };
+  on("resetBtn",()=>{resetAll();render();scrollTo(0,0);});
+  on("logoutBtn",logout);
+  const ls=document.getElementById("langSel");if(ls)ls.onchange=e=>setLang(e.target.value);
+  app.querySelectorAll(".ai-btn").forEach(a=>a.onclick=e=>{
+    const t2=buildPrompt();
+    if(!t2){e.preventDefault();toast(tr("먼저 항목을 골라 프롬프트를 만들어 주세요"));return;}
+    copyText(t2,tr("{name} 열기 · 프롬프트 복사됨",{name:AI_TOOLS[+a.dataset.ai].name}));
+  });
+  const ex=app.querySelector("[data-cust]");
+  if(ex)ex.oninput=e=>{S.custom[+e.target.dataset.cust]=e.target.value;const lt=document.getElementById("liveText"),pv=previewHtml();
+    if(lt){lt.innerHTML=pv||tr("항목을 고르면 여기에 프롬프트가 바로 만들어져요.");lt.classList.toggle("empty",!pv);}};
+}
+
+function render(){S.user?renderMain():renderLogin();}
+document.documentElement.lang=LANG;
+if(S.user)applyKept();
+render();
+</script>
+
+<script>if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}</script>
+</body></html>
