@@ -603,12 +603,30 @@ QUALITY.forEach(q=>LISTS[q.key]=q.list);
 
 // ============ STATE ============
 const freshV=()=>({genre:null,subject:[],ratio:"16:9",dur:"8",...Object.fromEntries(QUALITY.map(q=>[q.key,[]]))});
-const S={user:null,step:0,v:freshV(),custom:{},pick:null,modal:null,toast:""};
+const S={user:null,step:0,v:freshV(),custom:{},pick:null,modal:null};
 let KEEP=[],LANG="ko";
+// each user on this device gets their own kept words and work in progress
+const uid=u=>u.guest?"guest":"u:"+u.name.normalize("NFC").toLowerCase();
+const lsGet=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k)||"null");return v==null?d:v;}catch(e){return d;}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}};
 try{const u=JSON.parse(localStorage.getItem("pc_user")||"null");if(u&&u.name)S.user=u;}catch(e){}
-try{const k=JSON.parse(localStorage.getItem("pc_keep")||"[]");if(Array.isArray(k))KEEP=k;}catch(e){}
 try{const l=localStorage.getItem("pc_lang");if(LANGS.some(x=>x.id===l))LANG=l;}catch(e){}
-const saveKeep=()=>{try{localStorage.setItem("pc_keep",JSON.stringify(KEEP));}catch(e){}};
+// older versions kept one shared list for the whole device: hand it to whoever is signed in
+try{const old=lsGet("pc_keep",null);if(Array.isArray(old)){if(S.user&&!localStorage.getItem("pc_keep:"+uid(S.user)))lsSet("pc_keep:"+uid(S.user),old);localStorage.removeItem("pc_keep");}}catch(e){}
+const loadKeep=()=>{const k=S.user?lsGet("pc_keep:"+uid(S.user),[]):[];KEEP=Array.isArray(k)?k:[];};
+const saveKeep=()=>{if(S.user)lsSet("pc_keep:"+uid(S.user),KEEP);};
+// Pro codes entered on this device are remembered per user
+const proList=()=>{const l=lsGet("pc_pro",[]);return Array.isArray(l)?l:[];};
+const rememberPro=u=>{const l=proList();if(!l.includes(uid(u)))lsSet("pc_pro",[...l,uid(u)]);};
+function saveWork(){if(S.user)lsSet("pc_work:"+uid(S.user),{v:S.v,custom:S.custom,step:S.step});}
+function loadWork(){
+  const w=S.user&&lsGet("pc_work:"+uid(S.user),null);
+  if(!w||typeof w!=="object"||!w.v)return false;
+  S.v={...freshV(),...w.v};S.custom=w.custom&&typeof w.custom==="object"?w.custom:{};
+  S.step=Number.isInteger(w.step)&&w.step>=0&&w.step<STEPS.length?w.step:0;S.pick=null;
+  return true;
+}
+loadKeep();
 const isPro=()=>!!(S.user&&S.user.pro);
 const find=(list,id)=>(list||[]).find(x=>x.id===id);
 const isKept=key=>isPro()&&KEEP.includes(key);
@@ -645,6 +663,9 @@ function applyKept(){
     if(Array.isArray(S.v[g])){if(!S.v[g].includes(id))S.v[g].push(id);}
     else S.v[g]=id;
   });
+  // a kept 주인공 only shows under its own 장르, so bring that 장르 back too
+  if(!S.v.genre&&S.v.subject.length){const g=Object.keys(SUBJECTS).find(k=>SUBJECTS[k].some(x=>x.id===S.v.subject[0]));if(g)S.v.genre=g;}
+  if(S.v.genre)S.v.subject=S.v.subject.filter(id=>(SUBJECTS[S.v.genre]||[]).some(x=>x.id===id));
 }
 function resetAll(){S.v=freshV();S.custom={};S.pick=null;S.step=0;applyKept();}
 
@@ -740,7 +761,13 @@ let allowCopy=false;
 ["contextmenu","dragstart","selectstart"].forEach(ev=>document.addEventListener(ev,e=>{
   if(e.target.closest&&e.target.closest(".noselect"))e.preventDefault();
 }));
-function toast(msg){S.toast=msg;render();clearTimeout(toast.t);toast.t=setTimeout(()=>{S.toast="";render();},1900);}
+// the toast lives outside #app so showing it never redraws the screen (and never steals focus from a text box)
+function toast(msg){
+  let el=document.getElementById("toastEl");
+  if(!el){el=document.createElement("div");el.id="toastEl";el.className="toast";el.setAttribute("role","status");document.body.appendChild(el);}
+  el.textContent=msg;el.hidden=false;
+  clearTimeout(toast.t);toast.t=setTimeout(()=>{el.hidden=true;},1900);
+}
 function copyText(text,okMsg){
   const ok=()=>toast(okMsg||tr("복사했어요"));
   try{navigator.clipboard.writeText(text).then(ok,()=>legacyCopy(text,ok));}
@@ -830,8 +857,13 @@ function renderLogin(){
   document.getElementById("guestBtn").onclick=()=>login({name:"guest",pro:false,guest:true});
 }
 function saveUser(){try{localStorage.setItem("pc_user",JSON.stringify(S.user));}catch(e){}}
-function login(u){S.user=u;saveUser();resetAll();render();}
-function logout(){S.user=null;try{localStorage.removeItem("pc_user");}catch(e){}S.v=freshV();S.custom={};S.step=0;S.pick=null;render();}
+function login(u){
+  if(u.pro)rememberPro(u);else if(proList().includes(uid(u)))u.pro=true;
+  S.user=u;saveUser();loadKeep();
+  if(!loadWork())resetAll();
+  render();scrollTo(0,0);
+}
+function logout(){saveWork();S.user=null;KEEP=[];S.modal=null;try{localStorage.removeItem("pc_user");}catch(e){}S.v=freshV();S.custom={};S.step=0;S.pick=null;render();}
 
 function optGrid(gr){
   const sel=S.v[gr.key];
@@ -903,7 +935,7 @@ function modalHtml(){
 function renderMain(){
   const t=buildPrompt(),pv=previewHtml();
   const fin=STEPS[S.step].final;
-  const name=S.user.guest?"":S.user.proName?tr("Pro 사용자"):S.user.name;
+  const name=S.user.guest?(isPro()?tr("Pro 사용자"):""):S.user.name;
   app.innerHTML=`
   <header><div class="wrap hrow">
     <div class="logo">Shot<span>Craft</span></div>
@@ -936,7 +968,7 @@ function renderMain(){
   </div></main>
   ${isPro()?"":`<div class="wrap adfoot">${AdBottomBanner()}</div>`}
   ${modalHtml()}
-  ${S.toast?`<div class="toast" role="status">${esc(S.toast)}</div>`:""}`;
+`;
   bind();
 }
 
@@ -958,7 +990,7 @@ function bind(){
   on("copyLive",copyLive);
   on("copyFinal",copyFinal);
   on("keepBtn",()=>{toggleKeep();render();});
-  on("clearKeep",()=>{KEEP=[];saveKeep();toast(tr("유지를 모두 풀었어요"));});
+  on("clearKeep",()=>{KEEP=[];saveKeep();render();toast(tr("유지를 모두 풀었어요"));});
   on("adClose",()=>{if(S.modal&&S.modal.left<=0&&S.modal.n<2){startAd(2);return;}if(S.modal&&S.modal.left<=0){const t=buildPrompt();S.modal=null;render();if(t)copyText(t);}});
   on("proClose",()=>{S.modal=null;render();});
   const pf=document.getElementById("proForm");
@@ -966,7 +998,7 @@ function bind(){
     e.preventDefault();
     const code=document.getElementById("proCode").value.trim().toUpperCase();
     if(code!=="PRO-DEMO"){S.modal.err=tr("Pro 코드가 맞지 않아요.");render();return;}
-    S.user={...S.user,pro:true,guest:false,proName:!!S.user.guest};saveUser();
+    S.user={...S.user,pro:true};saveUser();rememberPro(S.user);
     S.modal=null;toggleKeep();render();
   };
   on("resetBtn",()=>{resetAll();render();scrollTo(0,0);});
@@ -978,13 +1010,13 @@ function bind(){
     copyText(t2,tr("{name} 열기 · 프롬프트 복사됨",{name:AI_TOOLS[+a.dataset.ai].name}));
   });
   const ex=app.querySelector("[data-cust]");
-  if(ex)ex.oninput=e=>{S.custom[+e.target.dataset.cust]=e.target.value;const lt=document.getElementById("liveText"),pv=previewHtml();
+  if(ex)ex.oninput=e=>{S.custom[+e.target.dataset.cust]=e.target.value;saveWork();const lt=document.getElementById("liveText"),pv=previewHtml();
     if(lt){lt.innerHTML=pv||tr("항목을 고르면 여기에 프롬프트가 바로 만들어져요.");lt.classList.toggle("empty",!pv);}};
 }
 
-function render(){S.user?renderMain():renderLogin();}
+function render(){if(S.user){renderMain();saveWork();}else renderLogin();}
 document.documentElement.lang=LANG;
-if(S.user)applyKept();
+if(S.user&&!loadWork())applyKept();
 render();
 </script>
 
