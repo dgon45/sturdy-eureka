@@ -53,6 +53,10 @@ h1,h2{font-family:var(--f-display);font-weight:400;letter-spacing:.01em;text-wra
 input[type=text],textarea{width:100%;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .note{font-size:12.5px;color:var(--muted)}
 .err{font-size:13px;color:#c0392b}
+.btn.google{display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#1f1f1f;border-color:#747775}
+.btn.google svg{width:18px;height:18px;flex:none}
+.acct{display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:center;font-size:12.5px;color:var(--muted);padding-block:4px 0}
+.acct .linkbtn{font-size:12.5px}
 
 /* header + ad bar */
 header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
@@ -173,6 +177,7 @@ main{padding-block:16px 40px;display:grid;gap:16px}
 
 <div id="app"></div>
 
+<script src="firebase-config.js"></script>
 <script>
 // ============ GENRES ============
 const GENRES=[
@@ -494,6 +499,17 @@ const UI={
   "Pro 코드 (있으면)":["Pro code (if you have one)","Código Pro (si tienes)"],
   "시작하기":["Start","Empezar"],
   "게스트로 둘러보기":["Look around as a guest","Entrar como invitado"],
+  "Google로 시작하기":["Continue with Google","Continuar con Google"],
+  "Google 계정으로 들어가면 폰과 PC에서 작업과 유지한 단어가 이어져요. 게스트는 이 기기에만 저장돼요.":["Sign in with Google to carry your work and kept words between phone and PC. Guest data stays on this device only.","Entra con Google para continuar tu trabajo y palabras fijadas entre móvil y PC. Como invitado, todo queda solo en este dispositivo."],
+  "Google 로그인은 준비 중이에요. 지금은 게스트로 써 주세요.":["Google sign-in is coming soon. Please use guest mode for now.","El inicio con Google llegará pronto. Por ahora usa el modo invitado."],
+  "Google 로그인에 실패했어요. 잠시 후 다시 해 주세요.":["Google sign-in failed. Please try again in a moment.","No se pudo entrar con Google. Inténtalo de nuevo en un momento."],
+  "인터넷 연결을 확인해 주세요.":["Please check your internet connection.","Revisa tu conexión a internet."],
+  "로그인 중…":["Signing in…","Entrando…"],
+  "계정 삭제":["Delete account","Eliminar cuenta"],
+  "계정을 삭제할까요? 클라우드에 저장된 작업, 유지한 단어, Pro 기록이 모두 지워지고 되돌릴 수 없어요.":["Delete your account? Your saved work, kept words and Pro record in the cloud will be erased for good.","¿Eliminar tu cuenta? Se borrarán para siempre tu trabajo, palabras fijadas y registro Pro en la nube."],
+  "계정을 삭제했어요":["Your account was deleted","Tu cuenta fue eliminada"],
+  "계정 삭제에 실패했어요. 다시 로그인한 뒤 해 주세요.":["Could not delete the account. Sign in again and retry.","No se pudo eliminar la cuenta. Vuelve a entrar e inténtalo otra vez."],
+  "동기화됨":["Synced","Sincronizado"],
   "테스트용 Pro 코드는 PRO-DEMO 입니다. 진짜 결제나 계정은 아직 연결되지 않았어요.":["The test Pro code is PRO-DEMO. Real payments and accounts are not connected yet.","El código Pro de prueba es PRO-DEMO. Aún no hay pagos ni cuentas reales."],
   "이름을 넣어 주세요.":["Please enter your name.","Escribe tu nombre."],
   "Pro 코드가 맞지 않아요. 비워 두면 일반으로 시작해요.":["That Pro code is wrong. Leave it empty to start as a free user.","El código Pro no es correcto. Déjalo vacío para empezar gratis."],
@@ -606,7 +622,7 @@ const freshV=()=>({genre:null,subject:[],ratio:"16:9",dur:"8",...Object.fromEntr
 const S={user:null,step:0,v:freshV(),custom:{},pick:null,modal:null};
 let KEEP=[],LANG="ko";
 // each user on this device gets their own kept words and work in progress
-const uid=u=>u.guest?"guest":"u:"+u.name.normalize("NFC").toLowerCase();
+const uid=u=>u.guest?"guest":u.google?"g:"+u.uid:"u:"+u.name.normalize("NFC").toLowerCase();
 const lsGet=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k)||"null");return v==null?d:v;}catch(e){return d;}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}};
 try{const u=JSON.parse(localStorage.getItem("pc_user")||"null");if(u&&u.name)S.user=u;}catch(e){}
@@ -614,16 +630,25 @@ try{const l=localStorage.getItem("pc_lang");if(LANGS.some(x=>x.id===l))LANG=l;}c
 // older versions kept one shared list for the whole device: hand it to whoever is signed in
 try{const old=lsGet("pc_keep",null);if(Array.isArray(old)){if(S.user&&!localStorage.getItem("pc_keep:"+uid(S.user)))lsSet("pc_keep:"+uid(S.user),old);localStorage.removeItem("pc_keep");}}catch(e){}
 const loadKeep=()=>{const k=S.user?lsGet("pc_keep:"+uid(S.user),[]):[];KEEP=Array.isArray(k)?k:[];};
-const saveKeep=()=>{if(S.user)lsSet("pc_keep:"+uid(S.user),KEEP);};
+const saveKeep=()=>{if(S.user){lsSet("pc_keep:"+uid(S.user),KEEP);cloudDirty();}};
 // Pro codes entered on this device are remembered per user
 const proList=()=>{const l=lsGet("pc_pro",[]);return Array.isArray(l)?l:[];};
 const rememberPro=u=>{const l=proList();if(!l.includes(uid(u)))lsSet("pc_pro",[...l,uid(u)]);};
-function saveWork(){if(S.user)lsSet("pc_work:"+uid(S.user),{v:S.v,custom:S.custom,step:S.step});}
+// render() saves every time, so only a real change marks the work for cloud upload
+function saveWork(){
+  if(!S.user)return;
+  const w={v:S.v,custom:S.custom,step:S.step},j=JSON.stringify(w),k=uid(S.user);
+  if(saveWork.last===k+j)return;
+  const first=saveWork.last===undefined||!saveWork.last.startsWith(k+"{");
+  saveWork.last=k+j;lsSet("pc_work:"+k,w);
+  if(!first)cloudDirty();
+}
 function loadWork(){
   const w=S.user&&lsGet("pc_work:"+uid(S.user),null);
   if(!w||typeof w!=="object"||!w.v)return false;
   S.v={...freshV(),...w.v};S.custom=w.custom&&typeof w.custom==="object"?w.custom:{};
   S.step=Number.isInteger(w.step)&&w.step>=0&&w.step<STEPS.length?w.step:0;S.pick=null;
+  saveWork.last=undefined;
   return true;
 }
 loadKeep();
@@ -828,32 +853,19 @@ function AdBottomBanner(){
 }
 const langPick=()=>`<div class="langs" role="group" aria-label="${tr("언어")}">${LANGS.map(l=>`<button type="button" class="lang${l.id===LANG?" on":""}" data-lang="${l.id}" aria-pressed="${l.id===LANG}">${l.label}</button>`).join("")}</div>`;
 
+const G_LOGO=`<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>`;
 function renderLogin(){
-  app.innerHTML=`<div class="wrap login"><form class="login-card" id="loginForm">
+  app.innerHTML=`<div class="wrap login"><div class="login-card">
     ${langPick()}
     <div class="logo">Shot<span>Craft</span></div>
     <p>${tr("고르기만 하면 AI 영상 프롬프트가 완성돼요.")}</p>
-    <div class="field"><label for="nameIn">${tr("이름")}</label><input type="text" id="nameIn" autocomplete="name" placeholder="${tr("예: 재보")}"></div>
-    <div class="field"><label for="codeIn">${tr("Pro 코드 (있으면)")}</label><input type="text" id="codeIn" placeholder="${tr("예: PRO-DEMO")}"></div>
+    <button class="btn google" type="button" id="googleBtn" ${CLOUD.on?"":"disabled"}>${G_LOGO}<span>${tr("Google로 시작하기")}</span></button>
     <div class="err" id="loginErr" hidden></div>
-    <button class="btn primary" type="submit">${tr("시작하기")}</button>
     <button class="btn" type="button" id="guestBtn">${tr("게스트로 둘러보기")}</button>
-    <div class="note">${tr("테스트용 Pro 코드는 PRO-DEMO 입니다. 진짜 결제나 계정은 아직 연결되지 않았어요.")}</div>
-  </form>${AdBottomBanner()}</div>`;
-  app.querySelectorAll(".lang").forEach(b=>b.onclick=()=>{
-    const n=document.getElementById("nameIn").value,c=document.getElementById("codeIn").value;
-    setLang(b.dataset.lang);
-    document.getElementById("nameIn").value=n;document.getElementById("codeIn").value=c;
-  });
-  document.getElementById("loginForm").onsubmit=e=>{
-    e.preventDefault();
-    const name=document.getElementById("nameIn").value.trim();
-    const code=document.getElementById("codeIn").value.trim().toUpperCase();
-    const err=document.getElementById("loginErr");
-    if(!name){err.textContent=tr("이름을 넣어 주세요.");err.hidden=false;return;}
-    if(code&&code!=="PRO-DEMO"){err.textContent=tr("Pro 코드가 맞지 않아요. 비워 두면 일반으로 시작해요.");err.hidden=false;return;}
-    login({name,pro:code==="PRO-DEMO"});
-  };
+    <div class="note">${CLOUD.on?tr("Google 계정으로 들어가면 폰과 PC에서 작업과 유지한 단어가 이어져요. 게스트는 이 기기에만 저장돼요."):tr("Google 로그인은 준비 중이에요. 지금은 게스트로 써 주세요.")}</div>
+  </div>${AdBottomBanner()}</div>`;
+  app.querySelectorAll(".lang").forEach(b=>b.onclick=()=>setLang(b.dataset.lang));
+  document.getElementById("googleBtn").onclick=googleLogin;
   document.getElementById("guestBtn").onclick=()=>login({name:"guest",pro:false,guest:true});
 }
 function saveUser(){try{localStorage.setItem("pc_user",JSON.stringify(S.user));}catch(e){}}
@@ -863,7 +875,119 @@ function login(u){
   if(!loadWork())resetAll();
   render();scrollTo(0,0);
 }
-function logout(){saveWork();S.user=null;KEEP=[];S.modal=null;try{localStorage.removeItem("pc_user");}catch(e){}S.v=freshV();S.custom={};S.step=0;S.pick=null;render();}
+function logout(){
+  saveWork();
+  const u=S.user;
+  if(u&&u.google){cloudPush();if(CLOUD.auth)CLOUD.auth.signOut().catch(()=>{});}
+  else if(u)lsSet("pc_last",uid(u));
+  clearLocalSession();render();
+}
+function clearLocalSession(){S.user=null;KEEP=[];S.modal=null;try{localStorage.removeItem("pc_user");}catch(e){}S.v=freshV();S.custom={};S.step=0;S.pick=null;}
+
+// ============ CLOUD: Google sign-in + sync (only when firebase-config.js is filled in) ============
+// users/{uid} = {keep, work, pro, t}; t is the time of the last change, the newer copy wins
+const FB="https://www.gstatic.com/firebasejs/10.12.2/";
+const CLOUD={on:!!(window.SHOTCRAFT_FIREBASE&&window.SHOTCRAFT_FIREBASE.apiKey),ready:null,auth:null,db:null,timer:null};
+const loadScript=src=>new Promise((ok,no)=>{const el=document.createElement("script");el.src=src;el.onload=ok;el.onerror=no;document.head.appendChild(el);});
+function cloudInit(){
+  if(!CLOUD.on)return Promise.reject(new Error("off"));
+  if(!CLOUD.ready)CLOUD.ready=(async()=>{
+    await loadScript(FB+"firebase-app-compat.js");
+    await Promise.all([loadScript(FB+"firebase-auth-compat.js"),loadScript(FB+"firebase-firestore-compat.js")]);
+    if(!firebase.apps.length)firebase.initializeApp(window.SHOTCRAFT_FIREBASE);
+    CLOUD.auth=firebase.auth();CLOUD.db=firebase.firestore();
+  })().catch(e=>{CLOUD.ready=null;throw e;});
+  return CLOUD.ready;
+}
+const cloudDoc=u=>CLOUD.db.collection("users").doc(u.uid);
+const signedIn=u=>!!(u&&u.google&&CLOUD.auth&&CLOUD.auth.currentUser&&CLOUD.auth.currentUser.uid===u.uid);
+function cloudDirty(){
+  if(!S.user||!S.user.google)return;
+  lsSet("pc_t:"+uid(S.user),Date.now());
+  clearTimeout(CLOUD.timer);CLOUD.timer=setTimeout(cloudPush,1500);
+}
+async function cloudPush(){
+  clearTimeout(CLOUD.timer);CLOUD.timer=null;
+  const u=S.user;if(!signedIn(u))return;
+  const k=uid(u);
+  // JSON round trip drops undefined values, which Firestore refuses
+  const data=JSON.parse(JSON.stringify({keep:lsGet("pc_keep:"+k,[]),work:lsGet("pc_work:"+k,null),pro:!!u.pro,t:lsGet("pc_t:"+k,0)||Date.now()}));
+  try{await cloudDoc(u).set(data);}catch(e){}
+}
+// take the cloud copy when it is newer than this device's, otherwise upload ours
+async function cloudPull(){
+  const u=S.user;if(!signedIn(u))return;
+  const k=uid(u);
+  let d=null;try{const snap=await cloudDoc(u).get();d=snap.exists?snap.data():null;}catch(e){return;}
+  if(S.user!==u)return;
+  const localT=lsGet("pc_t:"+k,0);
+  let changed=false;
+  if(d&&d.pro&&!u.pro){S.user={...u,pro:true};saveUser();rememberPro(S.user);changed=true;}
+  if(d&&(d.t||0)>localT){
+    if(Array.isArray(d.keep))lsSet("pc_keep:"+k,d.keep);
+    if(d.work)lsSet("pc_work:"+k,d.work);
+    lsSet("pc_t:"+k,d.t);
+    loadKeep();if(!loadWork())resetAll();
+    changed=true;
+  }else if(!d||localT>(d.t||0)||(S.user.pro&&!d.pro))cloudPush();
+  if(changed){render();toast(tr("동기화됨"));}
+}
+function loginErr(msg){const el=document.getElementById("loginErr");if(el){el.textContent=msg;el.hidden=!msg;}}
+async function googleLogin(){
+  const btn=document.getElementById("googleBtn");
+  loginErr("");if(btn){btn.disabled=true;btn.querySelector("span").textContent=tr("로그인 중…");}
+  const reset=()=>{if(btn){btn.disabled=false;btn.querySelector("span").textContent=tr("Google로 시작하기");}};
+  try{
+    await cloudInit();
+    const p=new firebase.auth.GoogleAuthProvider();p.setCustomParameters({prompt:"select_account"});
+    let r;
+    try{r=await CLOUD.auth.signInWithPopup(p);}
+    catch(e){
+      // some app shells block pop-ups: go through a full-page redirect instead
+      if(e&&(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment")){await CLOUD.auth.signInWithRedirect(p);return;}
+      throw e;
+    }
+    finishGoogle(r.user);
+  }catch(e){
+    reset();
+    const code=e&&e.code||"";
+    if(code==="auth/popup-closed-by-user"||code==="auth/cancelled-popup-request")return;
+    loginErr(code==="auth/network-request-failed"||!navigator.onLine||!code?tr("인터넷 연결을 확인해 주세요."):tr("Google 로그인에 실패했어요. 잠시 후 다시 해 주세요.")+" ("+code+")");
+  }
+}
+function finishGoogle(fu){
+  const u={google:true,uid:fu.uid,name:fu.displayName||fu.email||"Google",email:fu.email||"",pro:false};
+  const k=uid(u),prev=lsGet("pc_last",null);
+  // first Google sign-in on this device: bring along what was made as guest (or under the old name login)
+  if(prev&&prev!==k&&localStorage.getItem("pc_work:"+k)==null){
+    const w=lsGet("pc_work:"+prev,null),kp=lsGet("pc_keep:"+prev,null);
+    if(w)lsSet("pc_work:"+k,w);
+    if(Array.isArray(kp))lsSet("pc_keep:"+k,kp);
+    if(proList().includes(prev))u.pro=true;
+  }
+  try{localStorage.removeItem("pc_last");}catch(e){}
+  login(u);cloudPull();
+}
+async function deleteAccount(){
+  const u=S.user;if(!u||!u.google)return;
+  if(!confirm(tr("계정을 삭제할까요? 클라우드에 저장된 작업, 유지한 단어, Pro 기록이 모두 지워지고 되돌릴 수 없어요.")))return;
+  try{
+    await cloudInit();
+    if(!signedIn(u))throw new Error("signed out");
+    clearTimeout(CLOUD.timer);
+    await cloudDoc(u).delete();
+    const fu=CLOUD.auth.currentUser;
+    try{await fu.delete();}
+    catch(e){
+      if(e&&e.code==="auth/requires-recent-login"){await fu.reauthenticateWithPopup(new firebase.auth.GoogleAuthProvider());await fu.delete();}
+      else throw e;
+    }
+    const k=uid(u);
+    ["pc_work:","pc_keep:","pc_t:"].forEach(x=>{try{localStorage.removeItem(x+k);}catch(e){}});
+    lsSet("pc_pro",proList().filter(x=>x!==k));
+    clearLocalSession();render();toast(tr("계정을 삭제했어요"));
+  }catch(e){toast(tr("계정 삭제에 실패했어요. 다시 로그인한 뒤 해 주세요."));}
+}
 
 function optGrid(gr){
   const sel=S.v[gr.key];
@@ -966,6 +1090,7 @@ function renderMain(){
     <div class="ai-list">${AI_TOOLS.map((a,i)=>`<a class="ai-btn" href="${a.url}" target="_blank" rel="noopener" data-ai="${i}" title="${a.name} (${a.by})" aria-disabled="${t?"false":"true"}"><span class="ai-ic">${AI_ICONS[a.name]||""}</span><span class="ai-nm">${a.name}</span><span class="go">↗</span></a>`).join("")}</div>
   </aside>
   </div></main>
+  ${S.user.google?`<div class="wrap acct"><span>${esc(S.user.email||S.user.name)}</span><button class="linkbtn" id="deleteAcct">${tr("계정 삭제")}</button></div>`:""}
   ${isPro()?"":`<div class="wrap adfoot">${AdBottomBanner()}</div>`}
   ${modalHtml()}
 `;
@@ -998,11 +1123,12 @@ function bind(){
     e.preventDefault();
     const code=document.getElementById("proCode").value.trim().toUpperCase();
     if(code!=="PRO-DEMO"){S.modal.err=tr("Pro 코드가 맞지 않아요.");render();return;}
-    S.user={...S.user,pro:true};saveUser();rememberPro(S.user);
+    S.user={...S.user,pro:true};saveUser();rememberPro(S.user);cloudDirty();
     S.modal=null;toggleKeep();render();
   };
   on("resetBtn",()=>{resetAll();render();scrollTo(0,0);});
   on("logoutBtn",logout);
+  on("deleteAcct",deleteAccount);
   const ls=document.getElementById("langSel");if(ls)ls.onchange=e=>setLang(e.target.value);
   app.querySelectorAll(".ai-btn").forEach(a=>a.onclick=e=>{
     const t2=buildPrompt();
@@ -1018,6 +1144,20 @@ function render(){if(S.user){renderMain();saveWork();}else renderLogin();}
 document.documentElement.lang=LANG;
 if(S.user&&!loadWork())applyKept();
 render();
+if(CLOUD.on)cloudInit().then(()=>{
+  CLOUD.auth.getRedirectResult().then(r=>{if(r&&r.user&&!S.user)finishGoogle(r.user);}).catch(e=>{if(!S.user)loginErr(tr("Google 로그인에 실패했어요. 잠시 후 다시 해 주세요.")+" ("+(e&&e.code||"")+")");});
+  CLOUD.auth.onAuthStateChanged(fu=>{
+    if(!S.user||!S.user.google)return;
+    if(!fu||fu.uid!==S.user.uid){clearLocalSession();render();return;} // signed out elsewhere or the account was removed
+    cloudPull();
+  });
+}).catch(()=>{}); // offline: keep working from this device's copy
+// coming back to the app (e.g. after working on the PC) picks up the newer copy; leaving it uploads ours
+document.addEventListener("visibilitychange",()=>{
+  if(!S.user||!S.user.google)return;
+  if(document.visibilityState==="hidden"){if(CLOUD.timer)cloudPush();}
+  else if(!CLOUD.timer)cloudPull();
+});
 </script>
 
 <script>if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}</script>
