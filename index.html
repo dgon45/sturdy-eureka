@@ -7,10 +7,15 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-</head><body>
-
-<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="고르기만 하면 AI 영상 프롬프트 완성. 카메라 무빙, 표정·말투, 조명, 품질 업 단어를 눌러 Sora·Veo·Kling·Runway용 영어 프롬프트를 만드는 무료 앱.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ShotCraft · AI 영상 프롬프트 빌더">
+<meta property="og:description" content="고르기만 하면 영화 같은 AI 영상 프롬프트가 완성돼요. Sora·Veo·Kling·Runway 바로가기까지.">
+<meta property="og:image" content="https://dgon45.github.io/sturdy-eureka/og-image.png">
+<meta property="og:url" content="https://dgon45.github.io/sturdy-eureka/">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+</head><body>
 <style>
 /* Layout: one column builder, sticky header + ad bar, step chips on top, live prompt card pinned below the options */
 :root{
@@ -41,6 +46,9 @@ h1,h2{font-family:var(--f-display);font-weight:400;letter-spacing:.01em;text-wra
 .login{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding-block:32px}
 .login .adbar{width:100%;max-width:400px}
 .adfoot{padding-block:8px 24px}
+.appicon{width:64px;height:64px;border-radius:16px;display:block}
+.foot{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;align-items:center;font-size:12.5px;color:var(--muted);padding-block:14px calc(24px + env(safe-area-inset-bottom,0px))}
+.foot a{color:var(--muted)}.foot .linkbtn{font-size:12.5px}
 .login-card{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px 22px;display:grid;gap:16px}
 .logo{font-family:var(--f-display);font-size:34px;letter-spacing:.04em}
 .logo span{color:var(--accent)}
@@ -496,7 +504,6 @@ const UI={
   "언어":["Language","Idioma"],
   "이름":["Name","Nombre"],
   "예: 재보":["e.g. Jay","ej. Ana"],
-  "Pro 코드 (있으면)":["Pro code (if you have one)","Código Pro (si tienes)"],
   "시작하기":["Start","Empezar"],
   "게스트로 둘러보기":["Look around as a guest","Entrar como invitado"],
   "Google로 시작하기":["Continue with Google","Continuar con Google"],
@@ -506,13 +513,11 @@ const UI={
   "인터넷 연결을 확인해 주세요.":["Please check your internet connection.","Revisa tu conexión a internet."],
   "로그인 중…":["Signing in…","Entrando…"],
   "계정 삭제":["Delete account","Eliminar cuenta"],
-  "계정을 삭제할까요? 클라우드에 저장된 작업, 유지한 단어, Pro 기록이 모두 지워지고 되돌릴 수 없어요.":["Delete your account? Your saved work, kept words and Pro record in the cloud will be erased for good.","¿Eliminar tu cuenta? Se borrarán para siempre tu trabajo, palabras fijadas y registro Pro en la nube."],
+  "계정을 삭제할까요? 클라우드에 저장된 작업과 유지한 단어가 모두 지워지고 되돌릴 수 없어요.":["Delete your account? Your saved work and kept words in the cloud will be erased for good.","¿Eliminar tu cuenta? Se borrarán para siempre tu trabajo y palabras fijadas en la nube."],
   "계정을 삭제했어요":["Your account was deleted","Tu cuenta fue eliminada"],
   "계정 삭제에 실패했어요. 다시 로그인한 뒤 해 주세요.":["Could not delete the account. Sign in again and retry.","No se pudo eliminar la cuenta. Vuelve a entrar e inténtalo otra vez."],
   "동기화됨":["Synced","Sincronizado"],
-  "테스트용 Pro 코드는 PRO-DEMO 입니다. 진짜 결제나 계정은 아직 연결되지 않았어요.":["The test Pro code is PRO-DEMO. Real payments and accounts are not connected yet.","El código Pro de prueba es PRO-DEMO. Aún no hay pagos ni cuentas reales."],
   "이름을 넣어 주세요.":["Please enter your name.","Escribe tu nombre."],
-  "Pro 코드가 맞지 않아요. 비워 두면 일반으로 시작해요.":["That Pro code is wrong. Leave it empty to start as a free user.","El código Pro no es correcto. Déjalo vacío para empezar gratis."],
   "게스트":["Guest","Invitado"],
   "일반":["Free","Gratis"],
   "나가기":["Log out","Salir"],
@@ -558,11 +563,15 @@ const UI={
   "처음부터 다시 만들기":["Start over","Empezar de nuevo"],
   "유지 기능은 Pro 전용이에요":["Keep is a Pro feature","Fijar es una función Pro"],
   "이걸 쓰면 반복 작업이 없어져서 영상 작업 속도가 빨라져요. 자주 쓰는 카메라, 조명, 스타일을 한 번만 유지해 두면 다음 영상부터 자동으로 들어가요.":["This removes repetitive work so you make videos faster. Keep your usual camera, lighting and style once, and they are added to every next video.","Elimina el trabajo repetitivo y acelera tus videos. Fija una vez tu cámara, luz y estilo habituales y se añadirán a cada video nuevo."],
-  "Pro 코드":["Pro code","Código Pro"],
-  "예: PRO-DEMO":["e.g. PRO-DEMO","ej. PRO-DEMO"],
-  "Pro로 바꾸고 유지하기":["Switch to Pro and keep","Pasar a Pro y fijar"],
   "나중에":["Later","Más tarde"],
-  "Pro 코드가 맞지 않아요.":["That Pro code is wrong.","El código Pro no es correcto."],
+  "Pro 구매는 곧 열려요.":["Pro purchase opens soon.","La compra Pro llegará pronto."],
+  "닫기":["Close","Cerrar"],
+  "바로 시작하기":["Start now","Empezar"],
+  "가입 없이 바로 써요. 작업은 이 기기에 자동 저장돼요.":["No sign-up needed. Your work saves on this device automatically.","Sin registro. Tu trabajo se guarda solo en este dispositivo."],
+  "친구에게 공유":["Share with a friend","Compartir"],
+  "개인정보처리방침":["Privacy policy","Privacidad"],
+  "문의":["Contact","Contacto"],
+  "앱 링크를 복사했어요":["App link copied","Enlace copiado"],
   "표정":["Expression","Expresión"],
   "시선":["Gaze","Mirada"],
   "말투 · 대화 톤":["Voice · dialogue tone","Voz · tono del diálogo"],
@@ -652,7 +661,14 @@ function loadWork(){
   return true;
 }
 loadKeep();
-const isPro=()=>!!(S.user&&S.user.pro);
+// 1.0 launches free: no ads and no Pro sale, so every feature is open to everyone.
+// Turn these on only once real ads / Google Play Billing (with server-side purchase acknowledgement) are wired in.
+const PLAN={ads:false,proSale:false};
+const APP_VERSION="1.0.0";
+const SHARE_URL="https://dgon45.github.io/sturdy-eureka/";
+const CONTACT_EMAIL=""; // shown in the footer once filled in
+const isPro=()=>!PLAN.proSale||!!(S.user&&S.user.pro);
+const showAds=()=>PLAN.ads&&!isPro();
 const find=(list,id)=>(list||[]).find(x=>x.id===id);
 const isKept=key=>isPro()&&KEEP.includes(key);
 function setLang(l){LANG=l;try{localStorage.setItem("pc_lang",l);}catch(e){}document.documentElement.lang=l;render();}
@@ -811,7 +827,7 @@ function copyLive(){const t=buildPrompt();if(t)copyText(t);}
 // final prompt: guests see the ad popup first
 function copyFinal(){
   const t=buildPrompt();if(!t)return;
-  if(isPro()){copyText(t);return;}
+  if(!showAds()){copyText(t);return;}
   startAd(1);
 }
 // two 5-second ads in a row before the copy
@@ -843,29 +859,46 @@ const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",
 const app=document.getElementById("app");
 
 function AdBarBanner(){
-  if(isPro())return "";
+  if(!showAds())return "";
   return `<div class="adbar-zone"><div class="wrap"><div class="adbar" role="complementary" aria-label="${tr("광고")}">
     <span class="adtag">AD</span><b>${tr("광고 자리 (728×40) · Pro로 바꾸면 사라져요")}</b><span class="adtag">${tr("광고")}</span>
   </div></div></div>`;
 }
 function AdBottomBanner(){
+  if(!PLAN.ads)return "";
   return `<div class="adbar" role="complementary" aria-label="${tr("광고")}"><span class="adtag">AD</span><b>${tr("광고 자리 (728×40) · 하단")}</b><span class="adtag">${tr("광고")}</span></div>`;
 }
 const langPick=()=>`<div class="langs" role="group" aria-label="${tr("언어")}">${LANGS.map(l=>`<button type="button" class="lang${l.id===LANG?" on":""}" data-lang="${l.id}" aria-pressed="${l.id===LANG}">${l.label}</button>`).join("")}</div>`;
 
 const G_LOGO=`<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>`;
+function footHtml(){
+  return `<footer class="wrap foot">
+    <button class="linkbtn" type="button" id="shareBtn">${tr("친구에게 공유")}</button>
+    <a href="privacy.html" target="_blank" rel="noopener">${tr("개인정보처리방침")}</a>
+    ${CONTACT_EMAIL?`<a href="mailto:${CONTACT_EMAIL}?subject=ShotCraft">${tr("문의")}</a>`:""}
+    <span>ShotCraft v${APP_VERSION}</span>
+  </footer>`;
+}
+function shareApp(){
+  const data={title:"ShotCraft",text:tr("고르기만 하면 AI 영상 프롬프트가 완성돼요."),url:SHARE_URL};
+  if(navigator.share){navigator.share(data).catch(()=>{});return;}
+  copyText(data.text+" "+data.url,tr("앱 링크를 복사했어요"));
+}
+function bindFoot(){const b=document.getElementById("shareBtn");if(b)b.onclick=shareApp;}
 function renderLogin(){
   app.innerHTML=`<div class="wrap login"><div class="login-card">
     ${langPick()}
+    <img class="appicon" src="icons/icon-192.png" alt="" width="64" height="64">
     <div class="logo">Shot<span>Craft</span></div>
     <p>${tr("고르기만 하면 AI 영상 프롬프트가 완성돼요.")}</p>
-    <button class="btn google" type="button" id="googleBtn" ${CLOUD.on?"":"disabled"}>${G_LOGO}<span>${tr("Google로 시작하기")}</span></button>
+    ${CLOUD.on?`<button class="btn google" type="button" id="googleBtn">${G_LOGO}<span>${tr("Google로 시작하기")}</span></button>`:""}
     <div class="err" id="loginErr" hidden></div>
-    <button class="btn" type="button" id="guestBtn">${tr("게스트로 둘러보기")}</button>
-    <div class="note">${CLOUD.on?tr("Google 계정으로 들어가면 폰과 PC에서 작업과 유지한 단어가 이어져요. 게스트는 이 기기에만 저장돼요."):tr("Google 로그인은 준비 중이에요. 지금은 게스트로 써 주세요.")}</div>
-  </div>${AdBottomBanner()}</div>`;
+    <button class="btn${CLOUD.on?"":" primary"}" type="button" id="guestBtn">${CLOUD.on?tr("게스트로 둘러보기"):tr("바로 시작하기")}</button>
+    <div class="note">${CLOUD.on?tr("Google 계정으로 들어가면 폰과 PC에서 작업과 유지한 단어가 이어져요. 게스트는 이 기기에만 저장돼요."):tr("가입 없이 바로 써요. 작업은 이 기기에 자동 저장돼요.")}</div>
+  </div>${AdBottomBanner()}${footHtml()}</div>`;
   app.querySelectorAll(".lang").forEach(b=>b.onclick=()=>setLang(b.dataset.lang));
-  document.getElementById("googleBtn").onclick=googleLogin;
+  const gb=document.getElementById("googleBtn");if(gb)gb.onclick=googleLogin;
+  bindFoot();
   document.getElementById("guestBtn").onclick=()=>login({name:"guest",pro:false,guest:true});
 }
 function saveUser(){try{localStorage.setItem("pc_user",JSON.stringify(S.user));}catch(e){}}
@@ -970,7 +1003,7 @@ function finishGoogle(fu){
 }
 async function deleteAccount(){
   const u=S.user;if(!u||!u.google)return;
-  if(!confirm(tr("계정을 삭제할까요? 클라우드에 저장된 작업, 유지한 단어, Pro 기록이 모두 지워지고 되돌릴 수 없어요.")))return;
+  if(!confirm(tr("계정을 삭제할까요? 클라우드에 저장된 작업과 유지한 단어가 모두 지워지고 되돌릴 수 없어요.")))return;
   try{
     await cloudInit();
     if(!signedIn(u))throw new Error("signed out");
@@ -1036,7 +1069,7 @@ function finalBody(){
     ${LANG==="en"&&t?`<pre class="prompt final noselect">${esc(t)}</pre>`:""}
     <button class="copy big" id="copyFinal" ${t?"":"disabled"}>${tr("최종 프롬프트 복사")}</button>
     ${enNote?`<div class="note">${enNote}</div>`:""}
-    ${isPro()?"":`<div class="note">${tr("게스트·일반 사용자는 복사 전에 짧은 광고가 두 번 나와요.")}</div>`}
+    ${showAds()?`<div class="note">${tr("게스트·일반 사용자는 복사 전에 짧은 광고가 두 번 나와요.")}</div>`:""}
     <button class="btn" id="resetBtn">${tr("처음부터 다시 만들기")}</button>`;
 }
 function modalHtml(){
@@ -1046,24 +1079,23 @@ function modalHtml(){
     <div class="adbox">${tr("광고 자리 (300×250)")}</div>
     <button class="btn primary" id="adClose" ${S.modal.left>0?"disabled":""}>${S.modal.left>0?tr("{n}초 후 복사할 수 있어요",{n:`<span class="count">${S.modal.left}</span>`}):(S.modal.n<2?tr("다음 광고 보기"):tr("닫고 복사하기"))}</button>
   </div></div>`;
-  return `<div class="modal" role="dialog" aria-modal="true" aria-label="Pro"><form class="modal-card left" id="proForm">
+  return `<div class="modal" role="dialog" aria-modal="true" aria-label="Pro"><div class="modal-card left">
     <h3>${tr("유지 기능은 Pro 전용이에요")}</h3>
     <p>${tr("이걸 쓰면 반복 작업이 없어져서 영상 작업 속도가 빨라져요. 자주 쓰는 카메라, 조명, 스타일을 한 번만 유지해 두면 다음 영상부터 자동으로 들어가요.")}</p>
-    <div class="field"><label for="proCode">${tr("Pro 코드")}</label><input type="text" id="proCode" placeholder="${tr("예: PRO-DEMO")}"></div>
-    ${S.modal.err?`<div class="err">${esc(S.modal.err)}</div>`:""}
-    <button class="btn primary" type="submit">${tr("Pro로 바꾸고 유지하기")}</button>
-    <button class="btn" type="button" id="proClose">${tr("나중에")}</button>
-  </form></div>`;
+    <p class="note">${tr("Pro 구매는 곧 열려요.")}</p>
+    <button class="btn" type="button" id="proClose">${tr("닫기")}</button>
+  </div></div>`;
 }
 
 function renderMain(){
   const t=buildPrompt(),pv=previewHtml();
   const fin=STEPS[S.step].final;
-  const name=S.user.guest?(isPro()?tr("Pro 사용자"):""):S.user.name;
+  const proBadge=PLAN.proSale&&isPro();
+  const name=S.user.guest?(proBadge?tr("Pro 사용자"):""):S.user.name;
   app.innerHTML=`
   <header><div class="wrap hrow">
     <div class="logo">Shot<span>Craft</span></div>
-    <div class="who">${name?`<span class="uname">${esc(name)}</span>`:""}<span class="pill${isPro()?" pro":""}">${isPro()?"Pro":S.user.guest?tr("게스트"):tr("일반")}</span>
+    <div class="who">${name?`<span class="uname">${esc(name)}</span>`:""}${proBadge?`<span class="pill pro">Pro</span>`:S.user.guest?`<span class="pill">${tr("게스트")}</span>`:PLAN.proSale?`<span class="pill">${tr("일반")}</span>`:""}
       <select id="langSel" aria-label="${tr("언어")}">${LANGS.map(l=>`<option value="${l.id}"${l.id===LANG?" selected":""}>${l.label}</option>`).join("")}</select>
       <button class="linkbtn" id="logoutBtn">${tr("나가기")}</button></div>
   </div></header>
@@ -1091,7 +1123,8 @@ function renderMain(){
   </aside>
   </div></main>
   ${S.user.google?`<div class="wrap acct"><span>${esc(S.user.email||S.user.name)}</span><button class="linkbtn" id="deleteAcct">${tr("계정 삭제")}</button></div>`:""}
-  ${isPro()?"":`<div class="wrap adfoot">${AdBottomBanner()}</div>`}
+  ${showAds()?`<div class="wrap adfoot">${AdBottomBanner()}</div>`:""}
+  ${footHtml()}
   ${modalHtml()}
 `;
   bind();
@@ -1118,15 +1151,8 @@ function bind(){
   on("clearKeep",()=>{KEEP=[];saveKeep();render();toast(tr("유지를 모두 풀었어요"));});
   on("adClose",()=>{if(S.modal&&S.modal.left<=0&&S.modal.n<2){startAd(2);return;}if(S.modal&&S.modal.left<=0){const t=buildPrompt();S.modal=null;render();if(t)copyText(t);}});
   on("proClose",()=>{S.modal=null;render();});
-  const pf=document.getElementById("proForm");
-  if(pf)pf.onsubmit=e=>{
-    e.preventDefault();
-    const code=document.getElementById("proCode").value.trim().toUpperCase();
-    if(code!=="PRO-DEMO"){S.modal.err=tr("Pro 코드가 맞지 않아요.");render();return;}
-    S.user={...S.user,pro:true};saveUser();rememberPro(S.user);cloudDirty();
-    S.modal=null;toggleKeep();render();
-  };
   on("resetBtn",()=>{resetAll();render();scrollTo(0,0);});
+  bindFoot();
   on("logoutBtn",logout);
   on("deleteAcct",deleteAccount);
   const ls=document.getElementById("langSel");if(ls)ls.onchange=e=>setLang(e.target.value);
