@@ -329,6 +329,26 @@ const LIGHTS=[
   {id:"l_back",label:"✨ 역광",en:"dramatic backlight with rim light"},
   {id:"l_fire",label:"🔥 불빛",en:"warm flickering firelight"},
   {id:"l_fog",label:"🌫️ 안개 속 빛줄기",en:"volumetric fog and light rays"},
+  {id:"l_noon",label:"☀️ 한낮의 강한 햇빛",en:"harsh midday sunlight"},
+  {id:"l_overcast",label:"🌥️ 흐린 날",en:"flat overcast daylight"},
+  {id:"l_window",label:"🪟 창문으로 드는 빛",en:"soft window light"},
+  {id:"l_moon",label:"🌕 달빛",en:"pale cold moonlight"},
+  {id:"l_candle",label:"🕯️ 촛불",en:"soft warm candlelight"},
+  {id:"l_street",label:"🚦 주황 가로등",en:"sodium vapor street lamps at night"},
+  {id:"l_studio",label:"🔦 스튜디오 조명",en:"clean bright studio lighting"},
+];
+const LSETS=[
+  {id:"ls_motiv",label:"🪟 자연스러운 현장광",en:"naturalistic motivated lighting"},
+  {id:"ls_rem",label:"🎨 렘브란트 조명",en:"Rembrandt lighting, triangle of light on the cheek"},
+  {id:"ls_butterfly",label:"🦋 뷰티 조명 (버터플라이)",en:"butterfly beauty lighting"},
+  {id:"ls_split",label:"🌓 얼굴 반쪽만 (스플릿)",en:"split lighting, half the face in shadow"},
+  {id:"ls_lowkey",label:"🌑 어둡게 (로우키)",en:"low-key lighting, deep shadows"},
+  {id:"ls_highkey",label:"🤍 밝고 화사하게 (하이키)",en:"high-key lighting, bright and airy"},
+  {id:"ls_chiaro",label:"🕯️ 강한 명암 (키아로스쿠로)",en:"chiaroscuro lighting, strong light and dark contrast"},
+  {id:"ls_top",label:"⬇️ 머리 위 탑라이트",en:"harsh top light from directly above"},
+  {id:"ls_under",label:"👻 아래에서 비춤",en:"eerie underlighting from below"},
+  {id:"ls_practical",label:"💡 화면 속 조명만",en:"lit only by practical lights in the scene"},
+  {id:"ls_gel",label:"🟦🟪 두 가지 색 조명",en:"two-tone colored gel lighting, teal and magenta"},
 ];
 const STYLES=[
   {id:"st_cine",label:"🎬 시네마틱",en:"cinematic film look"},
@@ -339,9 +359,30 @@ const STYLES=[
   {id:"st_dream",label:"💭 몽환적",en:"dreamy, ethereal atmosphere"},
   {id:"st_epic",label:"🏆 웅장함",en:"epic, grand scale"},
   {id:"st_dark",label:"🌑 어둡고 긴장감",en:"dark, tense mood"},
+  {id:"st_doc",label:"🎥 다큐멘터리",en:"documentary style, observational camera"},
+  {id:"st_mv",label:"🎶 뮤직비디오",en:"stylish music video aesthetic"},
+  {id:"st_ad",label:"💎 고급 광고",en:"high-end commercial look, polished product lighting"},
+  {id:"st_noir",label:"🎩 흑백 누아르",en:"black and white film noir"},
+  {id:"st_story",label:"🎀 대칭 파스텔 동화풍",en:"symmetrical pastel storybook framing, whimsical"},
+  {id:"st_clay",label:"🧱 클레이 애니",en:"claymation stop-motion"},
+  {id:"st_water",label:"🖌️ 수채화",en:"watercolor painting style"},
+  {id:"st_found",label:"📹 실제 찍은 듯 (파운드 푸티지)",en:"found footage, shaky amateur camcorder"},
 ];
-const RATIOS=[{id:"16:9",label:"16:9 가로"},{id:"9:16",label:"9:16 세로(쇼츠)"},{id:"1:1",label:"1:1 정사각"}];
-const DURATIONS=[{id:"5",label:"5초"},{id:"8",label:"8초"},{id:"10",label:"10초"}];
+const FILMS=[
+  {id:"fm_portra",label:"🌼 Kodak Portra 400",en:"shot on Kodak Portra 400 film, soft warm skin tones"},
+  {id:"fm_500t",label:"🌃 Kodak Vision3 500T",en:"shot on Kodak Vision3 500T tungsten film, halation around lights"},
+  {id:"fm_ekta",label:"🌈 Ektachrome 슬라이드",en:"Kodak Ektachrome slide film, rich saturated colors"},
+  {id:"fm_fuji",label:"🍃 Fuji Eterna 시네마",en:"Fujifilm Eterna cinema film, muted greens"},
+  {id:"fm_trix",label:"⚫ Tri-X 흑백 필름",en:"Kodak Tri-X black and white film, heavy grain"},
+  {id:"fm_imax",label:"🏟️ IMAX 70mm",en:"IMAX 70mm film, immense detail"},
+  {id:"fm_techni",label:"🎪 1950년대 테크니컬러",en:"1950s three-strip Technicolor look"},
+  {id:"fm_super8",label:"🏠 Super 8 홈비디오",en:"Super 8 home movie film, light leaks"},
+  {id:"fm_vhs",label:"📼 VHS 테이프",en:"VHS tape look, scan lines, color bleed"},
+  {id:"fm_dv",label:"📹 2000년대 캠코더",en:"early 2000s digital camcorder look"},
+  {id:"fm_phone",label:"📱 스마트폰 촬영",en:"shot on a smartphone, social media video look"},
+];
+const RATIOS=[{id:"16:9",label:"16:9 가로"},{id:"9:16",label:"9:16 세로(쇼츠)"},{id:"1:1",label:"1:1 정사각"},{id:"2.39:1",label:"2.39:1 시네마스코프"},{id:"4:3",label:"4:3 옛날 TV"}];
+const DURATIONS=[{id:"5",label:"5초"},{id:"8",label:"8초"},{id:"10",label:"10초"},{id:"15",label:"15초"}];
 
 // ============ CAMERA (with simple diagrams) ============
 // dg: f = frame [x,y,w,h] in a 96x64 box; s = start frame, e = end frame for moves
@@ -351,6 +392,12 @@ const SHOTS=[
   {id:"sh_med",label:"미디엄 · 허리 위",en:"medium shot from the waist up",dg:{shot:[33,8,30,35]}},
   {id:"sh_close",label:"클로즈업 · 얼굴",en:"close-up on the face",dg:{shot:[37,8,22,20]}},
   {id:"sh_ecu",label:"익스트림 클로즈업 · 눈",en:"extreme close-up on the eyes",dg:{shot:[40,12,16,8]}},
+  {id:"sh_estab",label:"설정샷 · 장소 소개",en:"establishing shot of the location",dg:{estab:1}},
+  {id:"sh_cowboy",label:"카우보이샷 · 허벅지 위",en:"cowboy shot from mid-thigh up",dg:{shot:[31,7,34,44]}},
+  {id:"sh_mcu",label:"미디엄 클로즈업 · 가슴 위",en:"medium close-up from the chest up",dg:{shot:[35,8,26,26]}},
+  {id:"sh_ots",label:"어깨 너머 (OTS)",en:"over-the-shoulder shot",dg:{ots:1}},
+  {id:"sh_two",label:"투샷 · 두 사람",en:"two-shot with both characters in frame",dg:{two:1}},
+  {id:"sh_insert",label:"인서트 · 손·물건 디테일",en:"insert detail shot of the hands and object",dg:{shot:[51,25,14,14]}},
 ];
 const MOVES=[
   {id:"mv_static",label:"고정",en:"static locked-off camera",dg:{e:[28,12,40,40]}},
@@ -368,6 +415,15 @@ const MOVES=[
   {id:"mv_top",label:"하늘에서 내려다보기",en:"top-down bird's-eye drone shot",dg:{top:1}},
   {id:"mv_zoom",label:"빠르게 줌 인",en:"fast crash zoom into the subject",dg:{s:[4,3,88,58],e:[38,12,20,18],fast:1}},
   {id:"mv_hand",label:"손으로 들고 흔들림",en:"handheld camera with natural shake",dg:{hand:1}},
+  {id:"mv_pan",label:"제자리에서 옆으로 돌리기 (팬)",en:"slow pan from left to right",dg:{pan:1}},
+  {id:"mv_tilt",label:"제자리에서 위로 훑기 (틸트 업)",en:"slow tilt up from feet to face",dg:{tilt:1}},
+  {id:"mv_dzoom",label:"배경만 늘어나기 (돌리 줌)",en:"dolly zoom vertigo effect, subject stays the same size while the background stretches",dg:{dzoom:1}},
+  {id:"mv_whip",label:"휙 돌리기 (휩 팬)",en:"fast whip pan with motion blur",dg:{s:[3,13,42,38],e:[51,13,42,38],whip:1}},
+  {id:"mv_arc",label:"반 바퀴 돌기 (아크)",en:"arc shot, camera circles halfway around the subject",dg:{arc:1}},
+  {id:"mv_steadi",label:"부드럽게 같이 걷기 (스테디캠)",en:"smooth steadicam shot walking alongside the subject",dg:{follow:1,s:[10,13,36,38],e:[50,13,36,38]}},
+  {id:"mv_fpv",label:"드론 급강하 (FPV)",en:"fast FPV drone dive swooping down through the scene",dg:{s:[4,2,88,30],e:[34,30,28,26],fast:1}},
+  {id:"mv_reveal",label:"앞 사물을 지나며 드러내기",en:"camera slides past a foreground object to reveal the subject",dg:{reveal:1}},
+  {id:"mv_roll",label:"화면이 빙글 회전 (롤)",en:"camera barrel roll rotating around its axis",dg:{roll:1}},
 ];
 const ANGLES=[
   {id:"an_eye",label:"눈높이",en:"eye-level angle",dg:{cam:[8,22],to:[56,22]}},
@@ -375,6 +431,36 @@ const ANGLES=[
   {id:"an_high",label:"위에서 내려다보기",en:"high angle looking down",dg:{cam:[8,4],to:[56,32]}},
   {id:"an_pov",label:"1인칭 시점",en:"first-person POV",dg:{pov:1}},
   {id:"an_dutch",label:"기울어진 화면",en:"dutch tilted angle",dg:{dutch:1}},
+  {id:"an_hip",label:"허리 높이",en:"hip-level angle",dg:{cam:[8,34],to:[56,32]}},
+  {id:"an_worm",label:"바닥에서 올려다보기",en:"extreme worm's-eye view from ground level",dg:{cam:[8,61],to:[60,12]}},
+  {id:"an_over",label:"바로 위에서 수직으로",en:"overhead top shot looking straight down",dg:{over:1}},
+  {id:"an_aerial",label:"아주 높은 하늘에서",en:"high aerial angle from far above",dg:{cam:[4,3],to:[62,42]}},
+];
+
+// lens and composition sit under the camera step (not drawn, so no dg)
+const LENSES=[
+  {id:"le_14",label:"🌐 초광각 14mm",en:"ultra-wide 14mm lens"},
+  {id:"le_24",label:"↔️ 광각 24mm",en:"24mm wide-angle lens"},
+  {id:"le_35",label:"📷 표준 35mm",en:"35mm lens, natural perspective"},
+  {id:"le_50",label:"👁️ 사람 눈 50mm",en:"50mm lens"},
+  {id:"le_85",label:"🧑 인물 85mm",en:"85mm portrait lens, creamy bokeh"},
+  {id:"le_135",label:"🔭 망원 135mm (배경 압축)",en:"135mm telephoto lens, compressed background"},
+  {id:"le_ana",label:"🎞️ 아나모픽 와이드",en:"anamorphic lens, oval bokeh, cinematic widescreen"},
+  {id:"le_macro",label:"🐜 매크로 접사",en:"macro lens, extreme close detail"},
+  {id:"le_fish",label:"🐟 어안 렌즈",en:"fisheye lens distortion"},
+  {id:"le_tilt",label:"🏘️ 미니어처 (틸트시프트)",en:"tilt-shift miniature effect"},
+  {id:"le_rack",label:"🎯 초점 옮기기 (랙 포커스)",en:"rack focus from the foreground to the subject"},
+  {id:"le_deep",label:"🏞️ 앞뒤 모두 선명",en:"deep focus, sharp from foreground to background"},
+];
+const COMPS=[
+  {id:"cp_thirds",label:"▦ 삼분할",en:"rule of thirds composition"},
+  {id:"cp_sym",label:"⬛ 정중앙 대칭",en:"perfectly symmetrical centered composition"},
+  {id:"cp_lead",label:"🛤️ 선이 시선을 이끔",en:"leading lines guiding the eye to the subject"},
+  {id:"cp_neg",label:"⬜ 넓은 여백",en:"minimalist composition with lots of negative space"},
+  {id:"cp_frame",label:"🚪 문·창문 사이로 (프레임 속 프레임)",en:"framed through a doorway, frame within a frame"},
+  {id:"cp_fg",label:"🌿 앞쪽 사물로 깊이감",en:"foreground elements adding depth"},
+  {id:"cp_sil",label:"🌄 실루엣",en:"subject silhouetted against a bright sky"},
+  {id:"cp_small",label:"🏔️ 작은 인물 · 큰 배경",en:"tiny figure in a vast landscape, sense of scale"},
 ];
 
 // ============ QUALITY BOOSTERS ============
@@ -384,24 +470,40 @@ const QUALITY=[
     {id:"ql_dof",label:"🌫️ 배경 흐림 (아웃포커스)",en:"shallow depth of field, soft bokeh"},
     {id:"ql_sharp",label:"🔍 선명 · 디테일",en:"sharp focus, highly detailed textures"},
     {id:"ql_hdr",label:"🖥️ 4K HDR",en:"4K, high dynamic range"},
+    {id:"ql_8k",label:"🖼️ 8K 초고화질",en:"8K resolution"},
+    {id:"ql_grain",label:"🎞️ 필름 입자",en:"fine 35mm film grain"},
+    {id:"ql_halation",label:"✨ 하이라이트 번짐",en:"subtle halation around highlights"},
   ]},
   {key:"q_color",title:"색감",note:"한 가지만 고르는 게 좋아요",list:[
     {id:"qc_teal",label:"🎞️ 영화 색감 (청록·주황)",en:"teal and orange color grading"},
     {id:"qc_warm",label:"🍂 따뜻한 빈티지",en:"warm vintage color grade"},
     {id:"qc_muted",label:"🌫️ 차분한 저채도",en:"desaturated muted tones"},
     {id:"qc_vivid",label:"🌈 쨍한 원색",en:"vibrant saturated colors"},
+    {id:"qc_bw",label:"⚫ 흑백",en:"black and white"},
+    {id:"qc_bleach",label:"🪨 블리치 바이패스",en:"bleach bypass look, low saturation, high contrast"},
+    {id:"qc_pastel",label:"🍬 파스텔",en:"soft pastel color palette"},
+    {id:"qc_cool",label:"🧊 차가운 청색",en:"cold blue color grade"},
+    {id:"qc_neon",label:"💗 네온 핑크·청록",en:"neon magenta and cyan palette"},
   ]},
   {key:"q_motion",title:"움직임",note:"영상이 덜 어색해져요",list:[
     {id:"qm_nat",label:"🌊 자연스러운 움직임",en:"smooth natural motion, realistic physics"},
     {id:"qm_slow",label:"🐢 슬로모션",en:"slow motion"},
     {id:"qm_blur",label:"💨 영화 같은 모션 블러",en:"subtle cinematic motion blur, 24fps"},
     {id:"qm_steady",label:"🧘 흔들림 없는 화면",en:"steady stabilized camera"},
+    {id:"qm_ramp",label:"⏩ 느리다 빨라지기 (스피드 램프)",en:"speed ramping from slow motion to real time"},
+    {id:"qm_120",label:"🎯 초고속 120fps",en:"120fps high-speed slow motion"},
+    {id:"qm_tl",label:"⏱️ 타임랩스",en:"time-lapse"},
+    {id:"qm_hyper",label:"🚶‍♂️ 하이퍼랩스",en:"hyperlapse moving through the scene"},
+    {id:"qm_stop",label:"🧩 뚝뚝 끊기는 스톱모션",en:"choppy stop-motion frame rate"},
   ]},
   {key:"q_person",title:"인물",note:"얼굴·손이 덜 깨져요",list:[
     {id:"qp_same",label:"🧑 같은 얼굴 유지",en:"consistent character appearance throughout"},
     {id:"qp_skin",label:"✨ 자연스러운 피부",en:"natural skin texture, realistic face"},
     {id:"qp_eyes",label:"👁️ 살아있는 눈빛",en:"expressive, detailed eyes"},
     {id:"qp_hands",label:"✋ 손 모양 정확히",en:"anatomically correct hands"},
+    {id:"qp_hair",label:"💇 머리카락 결",en:"realistic individual hair strands"},
+    {id:"qp_cloth",label:"👗 옷감 움직임",en:"realistic fabric movement"},
+    {id:"qp_lips",label:"👄 대사와 입 모양 맞추기",en:"accurate lip-sync with the dialogue"},
   ]},
   {key:"q_fx",title:"날씨 · 효과",list:[
     {id:"qf_rain",label:"🌧️ 비",en:"light rain falling"},
@@ -409,18 +511,48 @@ const QUALITY=[
     {id:"qf_dust",label:"✨ 공기 중 먼지·입자",en:"dust particles floating in the air"},
     {id:"qf_flare",label:"🌟 렌즈 플레어",en:"anamorphic lens flare"},
     {id:"qf_wind",label:"🍃 바람에 날리는 머리·옷",en:"wind blowing through hair and clothes"},
+    {id:"qf_fog",label:"🌫️ 낮게 깔린 안개",en:"low-lying fog"},
+    {id:"qf_smoke",label:"💨 연기",en:"drifting smoke"},
+    {id:"qf_sparks",label:"🔥 불꽃·불씨",en:"flying sparks and embers"},
+    {id:"qf_leaves",label:"🍂 떨어지는 낙엽",en:"falling autumn leaves"},
+    {id:"qf_wet",label:"💧 젖은 바닥 반사",en:"wet reflective ground"},
+    {id:"qf_heat",label:"🌡️ 아지랑이",en:"heat haze shimmer"},
   ]},
   {key:"q_sound",title:"소리",note:"소리까지 만드는 AI(Veo, Sora 등)에서 효과",list:[
     {id:"qs_amb",label:"🏙️ 주변 환경음",en:"ambient environmental sound"},
     {id:"qs_music",label:"🎻 웅장한 음악",en:"dramatic orchestral score"},
     {id:"qs_sfx",label:"👣 발소리·효과음",en:"footsteps and natural sound effects"},
     {id:"qs_quiet",label:"🔇 음악 없이 현장음만",en:"no music, only natural ambience"},
+    {id:"qs_dialog",label:"🎤 또렷한 대사",en:"clear close-mic dialogue"},
+    {id:"qs_hits",label:"🥁 묵직한 타격음",en:"deep cinematic impact hits"},
+    {id:"qs_silence",label:"🤫 정적 후 큰 소리",en:"silence, then a sudden loud sound"},
+    {id:"qs_lofi",label:"☕ 잔잔한 로파이",en:"soft lo-fi background music"},
+    {id:"qs_rain",label:"🌧️ 빗소리",en:"rain sounds"},
+  ]},
+  {key:"q_edit",title:"편집 · 연출",note:"컷과 리듬을 정해요",list:[
+    {id:"qe_one",label:"🎬 한 번에 이어 찍기 (원테이크)",en:"one continuous take, no cuts"},
+    {id:"qe_multi",label:"🧩 와이드→미디엄→클로즈업",en:"multi-shot sequence: wide establishing shot, then medium shot, then close-up"},
+    {id:"qe_cuts",label:"⚡ 빠른 컷 편집",en:"fast-paced quick cuts"},
+    {id:"qe_slow",label:"🍵 느린 호흡",en:"slow contemplative pacing, long takes"},
+    {id:"qe_build",label:"📈 점점 고조",en:"tension builds steadily to a climax"},
+    {id:"qe_match",label:"🔁 매치 컷 전환",en:"match cut transition"},
+    {id:"qe_freeze",label:"⏸️ 마지막 장면 정지",en:"ends on a freeze frame"},
+    {id:"qe_loop",label:"♾️ 끊김 없는 반복 (루프)",en:"seamless loop, the last frame matches the first"},
   ]},
   {key:"q_avoid",title:"피하기",note:"넣으면 'Avoid:' 줄로 따로 붙어요",avoid:true,list:[
     {id:"qa_blur",label:"🚫 흐릿함",en:"blurry footage"},
     {id:"qa_face",label:"🚫 일그러진 얼굴·손",en:"distorted faces or hands"},
     {id:"qa_text",label:"🚫 글자·워터마크",en:"text, watermarks, logos"},
     {id:"qa_flicker",label:"🚫 깜빡임",en:"flickering"},
+    {id:"qa_morph",label:"🚫 형태가 녹아내림",en:"morphing or warping shapes"},
+    {id:"qa_limbs",label:"🚫 팔다리·손가락 추가",en:"extra limbs or fingers"},
+    {id:"qa_dup",label:"🚫 같은 인물 복제",en:"duplicate characters"},
+    {id:"qa_jitter",label:"🚫 화면 떨림",en:"jittery, unstable frames"},
+    {id:"qa_cut",label:"🚫 갑작스러운 컷",en:"sudden cuts or scene changes"},
+    {id:"qa_lowres",label:"🚫 저화질·깨짐",en:"low resolution, compression artifacts"},
+    {id:"qa_over",label:"🚫 과한 색",en:"oversaturated colors"},
+    {id:"qa_cartoon",label:"🚫 만화 같은 느낌",en:"cartoonish look"},
+    {id:"qa_sub",label:"🚫 자막",en:"subtitles or captions"},
   ]},
 ];
 
@@ -481,6 +613,8 @@ const ES={
   qa_blur:"Borroso",qa_face:"Caras o manos deformes",qa_text:"Texto y marcas de agua",qa_flicker:"Parpadeo",
   tn_whisper:"Susurro",tn_calm:"Tono calmado",tn_cheer:"Alegre",tn_serious:"Serio",tn_angry:"Gritando con enfado",tn_sad:"Voz temblorosa",tn_sarcastic:"Sarcástico",tn_flirty:"Coqueto",tn_cold:"Frío",tn_heroic:"Heroico",tn_narr:"Narración documental",tn_news:"Presentador de noticias",tn_asmr:"ASMR",tn_comic:"Cómico",tn_accent:"Acento regional",tn_child:"Infantil",
   "16:9":"16:9 horizontal","9:16":"9:16 vertical (Shorts)","1:1":"1:1 cuadrado","5":"5 s","8":"8 s","10":"10 s",
+  sh_estab:"Plano de situación",sh_cowboy:"Plano americano",sh_mcu:"Plano medio corto",sh_ots:"Sobre el hombro",sh_two:"Plano de dos",sh_insert:"Plano detalle",mv_pan:"Paneo",mv_tilt:"Tilt hacia arriba",mv_dzoom:"Dolly zoom (vértigo)",mv_whip:"Barrido rápido",mv_arc:"Arco alrededor",mv_steadi:"Steadicam",mv_fpv:"Picado de dron FPV",mv_reveal:"Revelar tras un objeto",mv_roll:"Giro de cámara",an_hip:"A la altura de la cadera",an_worm:"Vista de gusano",an_over:"Cenital",an_aerial:"Vista aérea",le_14:"Gran angular 14mm",le_24:"Angular 24mm",le_35:"Estándar 35mm",le_50:"50mm (ojo humano)",le_85:"Retrato 85mm",le_135:"Teleobjetivo 135mm",le_ana:"Anamórfico",le_macro:"Macro",le_fish:"Ojo de pez",le_tilt:"Efecto miniatura",le_rack:"Cambio de foco",le_deep:"Foco profundo",cp_thirds:"Regla de tercios",cp_sym:"Simetría central",cp_lead:"Líneas guía",cp_neg:"Espacio negativo",cp_frame:"Marco dentro del marco",cp_fg:"Primer término con profundidad",cp_sil:"Silueta",cp_small:"Figura pequeña, paisaje enorme",l_noon:"Sol fuerte de mediodía",l_overcast:"Día nublado",l_window:"Luz de ventana",l_moon:"Luz de luna",l_candle:"Luz de velas",l_street:"Farolas naranjas",l_studio:"Luz de estudio",ls_motiv:"Luz natural motivada",ls_rem:"Luz Rembrandt",ls_butterfly:"Luz mariposa (beauty)",ls_split:"Luz dividida",ls_lowkey:"Clave baja",ls_highkey:"Clave alta",ls_chiaro:"Claroscuro",ls_top:"Luz cenital",ls_under:"Luz desde abajo",ls_practical:"Solo luces prácticas",ls_gel:"Luces de dos colores",st_doc:"Documental",st_mv:"Videoclip",st_ad:"Anuncio de lujo",st_noir:"Cine negro en blanco y negro",st_story:"Cuento pastel simétrico",st_clay:"Plastilina stop-motion",st_water:"Acuarela",st_found:"Metraje encontrado","2.39:1":"2.39:1 cinemascope","4:3":"4:3 TV clásica","15":"15 s",ql_8k:"8K",ql_grain:"Grano de película",ql_halation:"Halación en las luces",qc_bw:"Blanco y negro",qc_bleach:"Bleach bypass",qc_pastel:"Pastel",qc_cool:"Azul frío",qc_neon:"Neón magenta y cian",qm_ramp:"Rampa de velocidad",qm_120:"Alta velocidad 120fps",qm_tl:"Time-lapse",qm_hyper:"Hyperlapse",qm_stop:"Stop-motion entrecortado",qp_hair:"Pelo realista",qp_cloth:"Tela realista",qp_lips:"Labios sincronizados",qf_fog:"Niebla baja",qf_smoke:"Humo",qf_sparks:"Chispas y brasas",qf_leaves:"Hojas cayendo",qf_wet:"Suelo mojado con reflejos",qf_heat:"Calima",qs_dialog:"Diálogo claro",qs_hits:"Golpes graves",qs_silence:"Silencio y golpe",qs_lofi:"Lo-fi suave",qs_rain:"Sonido de lluvia",qe_one:"Plano secuencia",qe_multi:"Secuencia general → medio → primer plano",qe_cuts:"Cortes rápidos",qe_slow:"Ritmo lento",qe_build:"Tensión creciente",qe_match:"Corte por coincidencia",qe_freeze:"Termina en imagen congelada",qe_loop:"Bucle perfecto",qa_morph:"Formas que se deforman",qa_limbs:"Extremidades o dedos de más",qa_dup:"Personajes duplicados",qa_jitter:"Imagen temblorosa",qa_cut:"Cortes repentinos",qa_lowres:"Baja resolución",qa_over:"Colores sobresaturados",qa_cartoon:"Aspecto de dibujo",qa_sub:"Subtítulos",
+  fm_portra:"Kodak Portra 400",fm_500t:"Kodak Vision3 500T",fm_ekta:"Ektachrome",fm_fuji:"Fuji Eterna",fm_trix:"Tri-X blanco y negro",fm_imax:"IMAX 70mm",fm_techni:"Technicolor de los 50",fm_super8:"Super 8 casero",fm_vhs:"Cinta VHS",fm_dv:"Videocámara de los 2000",fm_phone:"Grabado con móvil",
 };
 // English display names where the prompt phrase is too long to read as a label
 const EN={
@@ -496,10 +630,24 @@ const EN={
   qa_blur:"Blurry",qa_face:"Distorted faces or hands",qa_text:"Text and watermarks",qa_flicker:"Flicker",
   tn_whisper:"Whisper",tn_calm:"Calm",tn_cheer:"Cheerful",tn_serious:"Serious",tn_angry:"Angry shouting",tn_sad:"Trembling voice",tn_sarcastic:"Sarcastic",tn_flirty:"Playful",tn_cold:"Cold",tn_heroic:"Heroic",tn_narr:"Documentary narration",tn_news:"News anchor",tn_asmr:"ASMR",tn_comic:"Comedic",tn_accent:"Regional accent",tn_child:"Childlike",
   "16:9":"16:9 landscape","9:16":"9:16 vertical (Shorts)","1:1":"1:1 square","5":"5 s","8":"8 s","10":"10 s",
+  sh_estab:"Establishing shot",sh_cowboy:"Cowboy shot · thigh up",sh_mcu:"Medium close-up · chest up",sh_ots:"Over the shoulder",sh_two:"Two-shot",sh_insert:"Insert · detail",mv_pan:"Pan",mv_tilt:"Tilt up",mv_dzoom:"Dolly zoom (vertigo)",mv_whip:"Whip pan",mv_arc:"Half orbit (arc)",mv_steadi:"Steadicam walk",mv_fpv:"FPV drone dive",mv_reveal:"Reveal past foreground",mv_roll:"Barrel roll",an_hip:"Hip level",an_worm:"Worm's-eye view",an_over:"Overhead (top shot)",an_aerial:"Aerial",le_14:"Ultra-wide 14mm",le_24:"Wide 24mm",le_35:"Standard 35mm",le_50:"50mm (human eye)",le_85:"Portrait 85mm",le_135:"Telephoto 135mm",le_ana:"Anamorphic",le_macro:"Macro",le_fish:"Fisheye",le_tilt:"Tilt-shift miniature",le_rack:"Rack focus",le_deep:"Deep focus",cp_thirds:"Rule of thirds",cp_sym:"Centered symmetry",cp_lead:"Leading lines",cp_neg:"Negative space",cp_frame:"Frame within a frame",cp_fg:"Foreground depth",cp_sil:"Silhouette",cp_small:"Tiny figure, vast scene",l_noon:"Harsh midday sun",l_overcast:"Overcast",l_window:"Window light",l_moon:"Moonlight",l_candle:"Candlelight",l_street:"Orange street lamps",l_studio:"Studio lighting",ls_motiv:"Natural motivated light",ls_rem:"Rembrandt lighting",ls_butterfly:"Butterfly beauty light",ls_split:"Split lighting",ls_lowkey:"Low-key",ls_highkey:"High-key",ls_chiaro:"Chiaroscuro",ls_top:"Top light",ls_under:"Underlighting",ls_practical:"Practical lights only",ls_gel:"Two-tone color gels",st_doc:"Documentary",st_mv:"Music video",st_ad:"High-end commercial",st_noir:"Black & white noir",st_story:"Pastel storybook",st_clay:"Claymation",st_water:"Watercolor",st_found:"Found footage","2.39:1":"2.39:1 CinemaScope","4:3":"4:3 classic TV","15":"15 s",ql_8k:"8K",ql_grain:"Film grain",ql_halation:"Highlight halation",qc_bleach:"Bleach bypass",qc_pastel:"Pastel",qc_cool:"Cold blue",qc_neon:"Neon magenta & cyan",qm_ramp:"Speed ramp",qm_120:"120fps high speed",qm_tl:"Time-lapse",qm_hyper:"Hyperlapse",qm_stop:"Choppy stop-motion",qp_hair:"Realistic hair",qp_cloth:"Realistic fabric",qp_lips:"Lip-sync",qf_sparks:"Sparks and embers",qf_wet:"Wet reflections",qf_heat:"Heat haze",qs_dialog:"Clear dialogue",qs_hits:"Deep impact hits",qs_silence:"Silence, then a bang",qs_lofi:"Soft lo-fi",qe_one:"One take, no cuts",qe_multi:"Wide → medium → close-up",qe_cuts:"Fast cuts",qe_slow:"Slow pacing",qe_build:"Build to a climax",qe_match:"Match cut",qe_freeze:"Ends on freeze frame",qe_loop:"Seamless loop",qa_morph:"Morphing or warping",qa_limbs:"Extra limbs or fingers",qa_dup:"Duplicate characters",qa_jitter:"Jittery frames",qa_cut:"Sudden cuts",qa_lowres:"Low resolution",qa_over:"Oversaturated colors",qa_cartoon:"Cartoonish look",qa_sub:"Subtitles",
+  fm_portra:"Kodak Portra 400",fm_500t:"Kodak Vision3 500T",fm_ekta:"Ektachrome slide film",fm_fuji:"Fuji Eterna cinema",fm_trix:"Tri-X black & white",fm_imax:"IMAX 70mm",fm_techni:"1950s Technicolor",fm_super8:"Super 8 home movie",fm_vhs:"VHS tape",fm_dv:"2000s camcorder",fm_phone:"Smartphone footage",
 };
 
 // screen text: Korean is the key, English and Spanish are the translations
 const UI={
+  "렌즈 · 초점":["Lens · focus", "Lente · foco"],
+  "1~2개만 고르는 게 좋아요":["Best to pick 1 or 2", "Mejor elige 1 o 2"],
+  "구도":["Composition", "Composición"],
+  "화면 안에 어떻게 배치할지":["How things are placed in the frame", "Cómo se colocan las cosas en el encuadre"],
+  "빛 · 시간대":["Light · time of day", "Luz · hora del día"],
+  "조명 기법":["Lighting setup", "Esquema de iluminación"],
+  "영화 촬영장에서 쓰는 조명 방식":["Lighting styles used on film sets", "Esquemas usados en rodajes"],
+  "화면 스타일":["Look", "Estilo visual"],
+  "필름 · 카메라 룩":["Film · camera look", "Película · cámara"],
+  "필름마다 입자와 색이 달라요":["Each film has its own grain and color", "Cada película tiene su grano y color"],
+  "편집 · 연출":["Editing · pacing", "Montaje · ritmo"],
+  "컷과 리듬을 정해요":["Set the cuts and rhythm", "Define cortes y ritmo"],
   "고르기만 하면 AI 영상 프롬프트가 완성돼요.":["Just pick, and your AI video prompt is ready.","Solo elige y tu prompt de video con IA estará listo."],
   "언어":["Language","Idioma"],
   "이름":["Name","Nombre"],
@@ -615,19 +763,21 @@ const STEPS=[
   {groups:()=>[
     {key:"shot",title:"화면 크기",note:"사람이 얼마나 크게 보일지",list:SHOTS,cam:true},
     {key:"move",title:"카메라 움직임",note:"영상 동안 화면이 어떻게 움직일지",list:MOVES,cam:true},
-    {key:"angle",title:"카메라 높이 · 각도",note:"파란 세모가 카메라",list:ANGLES,cam:true}]},
-  {groups:()=>[{key:"light",list:LIGHTS}]},
-  {groups:()=>[{key:"style",list:STYLES},{key:"ratio",title:"화면 비율",list:RATIOS,fixed:true},{key:"dur",title:"길이",list:DURATIONS,fixed:true}]},
+    {key:"angle",title:"카메라 높이 · 각도",note:"파란 세모가 카메라",list:ANGLES,cam:true},
+    {key:"lens",title:"렌즈 · 초점",note:"1~2개만 고르는 게 좋아요",multi:true,list:LENSES},
+    {key:"comp",title:"구도",note:"화면 안에 어떻게 배치할지",multi:true,list:COMPS}]},
+  {groups:()=>[{key:"light",title:"빛 · 시간대",list:LIGHTS},{key:"lset",title:"조명 기법",note:"영화 촬영장에서 쓰는 조명 방식",list:LSETS}]},
+  {groups:()=>[{key:"style",title:"화면 스타일",list:STYLES},{key:"film",title:"필름 · 카메라 룩",note:"필름마다 입자와 색이 달라요",list:FILMS},{key:"ratio",title:"화면 비율",list:RATIOS,fixed:true},{key:"dur",title:"길이",list:DURATIONS,fixed:true}]},
   {groups:()=>QUALITY.map(q=>({key:q.key,title:q.title,note:q.note,multi:true,list:q.list}))},
   {final:true},
 ];
 const LAST=STEPS.length-1;
-const SINGLE_KEYS=["genre","face","gaze","tone","action","place","shot","move","angle","light","style"];
-const LISTS={genre:GENRES,face:FACES,gaze:GAZES,tone:TONES,action:ACTIONS,place:PLACES,shot:SHOTS,move:MOVES,angle:ANGLES,light:LIGHTS,style:STYLES};
+const SINGLE_KEYS=["genre","face","gaze","tone","action","place","shot","move","angle","light","lset","style","film"];
+const LISTS={genre:GENRES,face:FACES,gaze:GAZES,tone:TONES,action:ACTIONS,place:PLACES,shot:SHOTS,move:MOVES,angle:ANGLES,lens:LENSES,comp:COMPS,light:LIGHTS,lset:LSETS,style:STYLES,film:FILMS};
 QUALITY.forEach(q=>LISTS[q.key]=q.list);
 
 // ============ STATE ============
-const freshV=()=>({genre:null,subject:[],ratio:"16:9",dur:"8",...Object.fromEntries(QUALITY.map(q=>[q.key,[]]))});
+const freshV=()=>({genre:null,subject:[],lens:[],comp:[],ratio:"16:9",dur:"8",...Object.fromEntries(QUALITY.map(q=>[q.key,[]]))});
 const S={user:null,step:0,v:freshV(),custom:{},pick:null,modal:null};
 let KEEP=[],LANG="ko";
 // each user on this device gets their own kept words and work in progress
@@ -718,14 +868,15 @@ function segments(){
   const opt=(g,o)=>out.push({key:g+":"+o.id,text:o.en,view:plain(o)});
   const one=g=>{const o=find(LISTS[g],S.v[g]);if(o)opt(g,o);};
   const cust=i=>{const c=(S.custom[i]||"").trim();if(c)out.push({key:"c"+i+":"+c,text:c,view:c});};
-  ["shot","move","angle"].forEach(one);cust(5);
+  const many=g=>LISTS[g].filter(o=>S.v[g].includes(o.id)).forEach(o=>opt(g,o));
+  ["shot","move","angle"].forEach(one);many("lens");many("comp");cust(5);
   (SUBJECTS[S.v.genre]||[]).filter(x=>S.v.subject.includes(x.id)).forEach(o=>opt("subject",o));cust(1);
   ["face","gaze","tone"].forEach(one);cust(2);
   one("action");cust(3);
   one("place");cust(4);
   const gn=find(GENRES,S.v.genre);if(gn)out.push({key:"genre:"+gn.id,text:gn.en+" setting",view:plain(gn)});cust(0);
-  one("light");cust(6);
-  one("style");cust(7);
+  one("light");one("lset");cust(6);
+  one("style");one("film");cust(7);
   QUALITY.forEach(q=>q.list.filter(o=>S.v[q.key].includes(o.id)).forEach(o=>{
     (q.avoid?avoid:out).push({key:q.key+":"+o.id,text:o.en,view:plain(o)});
   }));cust(8);
@@ -774,6 +925,19 @@ function diagram(d){
   else if(d.cam){g=person(64,36,.85)+`<line class="sight" x1="${d.cam[0]+6}" y1="${d.cam[1]}" x2="${d.to[0]}" y2="${d.to[1]}"/><polygon class="cam" points="${d.cam[0]},${d.cam[1]-4} ${d.cam[0]+8},${d.cam[1]} ${d.cam[0]},${d.cam[1]+4}"/>`;}
   else if(d.pov){g=rect([6,4,84,56],"fr")+`<g class="fig"><path d="M30 60c0-8 4-12 8-12s6 4 6 12M66 60c0-8-4-12-8-12s-6 4-6 12"/></g>`+`<circle class="arh" cx="48" cy="26" r="2"/>`;}
   else if(d.dutch){g=person(48,34,.85)+`<rect class="fr" x="26" y="10" width="44" height="44" rx="2" transform="rotate(-14 48 32)"/>`;}
+  else if(d.estab){g=`<path class="sight" d="M6 52V34h10V24h8v28M30 52V18h12v34M50 52V30h14v22M70 52V22h8v-6h6v36M4 52h88"/>`+person(46,48,.3)+rect([3,3,90,58],"fr");}
+  else if(d.ots){g=person(66,34,.9)+person(24,46,1.8,"fig-ghost")+rect([8,4,80,56],"fr");}
+  else if(d.two){g=person(34,34,.9)+person(62,34,.9)+rect([14,6,68,52],"fr");}
+  else if(d.over){g=person(64,40,.85)+`<line class="sight" x1="64" y1="10" x2="64" y2="24"/><polygon class="cam" points="60,4 68,4 64,11"/>`;}
+  else if(d.pan||d.tilt){
+    const cx=d.pan?48:12,cy=d.pan?58:36,cam=d.pan?`${cx-4},${cy+4} ${cx+4},${cy+4} ${cx},${cy-4}`:`${cx-4},${cy-4} ${cx+4},${cy} ${cx-4},${cy+4}`;
+    const ends=d.pan?[[18,16],[78,16]]:[[80,56],[80,10]];
+    g=person(d.pan?48:62,d.pan?28:34,.75)+ends.map(e=>`<line class="sight" x1="${cx}" y1="${cy}" x2="${e[0]}" y2="${e[1]}"/>`).join("")
+      +`<path class="ar" d="${d.pan?"M26 28Q48 14 70 28":"M66 50Q78 33 66 16"}"/>`+(d.pan?arrow(64,24,72,30):arrow(70,22,65,14))+`<polygon class="cam" points="${cam}"/>`;}
+  else if(d.dzoom){g=`<path class="sight" d="M14 14L30 22M82 14L66 22M14 50L30 42M82 50L66 42"/>`+person(48,34,.75)+rect([30,12,36,40],"fr0")+rect([6,3,84,58],"fr")+arrow(30,12,16,6)+arrow(66,52,80,58);}
+  else if(d.arc){g=person(48,34,.75)+`<path class="ar" d="M12 46A36 11 0 0 0 84 46"/>`+arrow(78,53,85,47)+`<polygon class="cam" points="10,40 18,44 10,48"/>`;}
+  else if(d.roll){g=person(48,34,.75)+`<rect class="fr0" x="28" y="12" width="40" height="40" rx="2"/><rect class="fr" x="28" y="12" width="40" height="40" rx="2" transform="rotate(35 48 32)"/><path class="ar" d="M78 20A34 34 0 0 1 78 46"/>`+arrow(80,40,77,48);}
+  else if(d.reveal){g=person(62,34,.75)+`<rect class="fig" x="20" y="6" width="14" height="56" rx="2"/>`+rect([4,8,40,48],"fr0")+rect([44,8,40,48],"fr")+arrow(24,62,64,62);}
   else{
     if(d.follow){const sx=d.s[0]+d.s[2]/2,ex=d.e[0]+d.e[2]/2;g+=person(sx,d.s[1]+d.s[3]/2,.7,"fig-ghost")+person(ex,d.e[1]+d.e[3]/2,.7);}
     else g+=person(48,34,.75);
@@ -785,6 +949,7 @@ function diagram(d){
         if(d.fast)g+=arrow(d.s[0]+d.s[2],d.s[1],d.e[0]+d.e[2],d.e[1])+arrow(d.s[0],d.s[1]+d.s[3],d.e[0],d.e[1]+d.e[3]);}
       else if(d.follow)g+=arrow(x1,62,x2,62);
       else g+=arrow(x1,y1,x2,y2);
+      if(d.whip)g+=`<path class="ar" d="M30 22h30M26 32h40M30 42h30"/>`;
     }
   }
   return `<svg class="dg" viewBox="0 0 96 64" aria-hidden="true">${g}</svg>`;
