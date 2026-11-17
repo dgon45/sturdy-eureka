@@ -109,6 +109,23 @@ main{padding-block:16px 40px;display:grid;gap:16px}
 .summary div{display:grid;grid-template-columns:96px 1fr;gap:8px}
 .summary span:first-child{color:var(--muted)}
 
+/* scenes: 1장, 2장, 3장… each its own prompt, copied together */
+.scenes{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:grid;gap:10px}
+.scenes-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.scene-list{display:flex;flex-wrap:wrap;gap:6px}
+.scene-list .chip{font-weight:600}
+.scene-list .chip .dot{width:7px;height:7px;border-radius:50%;background:var(--line);flex:none}
+.scene-list .chip.has .dot{background:var(--accent)}
+.scene-list .chip.add{border-style:dashed;color:var(--accent)}
+.scene-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.scene-tools .copy[disabled]{opacity:.4}
+.scene-tools .del{color:#b42318}
+.scene-all{display:grid;gap:8px}
+.scene-all .sc{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:4px}
+.scene-all .sc b{font-size:13px}
+.scene-tag{font-size:15px;color:var(--accent);vertical-align:middle}
+.copy.big.alt{background:var(--sel);border-color:var(--sel);color:var(--surface)}
+
 /* ad popup (guest, step 8 copy only) */
 .modal{position:fixed;inset:0;background:var(--shade);display:grid;place-items:center;z-index:40;padding:20px}
 .modal-card{width:100%;max-width:360px;background:var(--surface);border-radius:14px;padding:20px;display:grid;gap:14px;text-align:center}
@@ -743,6 +760,26 @@ const UI={
   "날씨 · 효과":["Weather · effects","Clima · efectos"],
   "소리":["Sound","Sonido"],
   "소리까지 만드는 AI(Veo, Sora 등)에서 효과":["Works on AIs that make sound (Veo, Sora…)","Sirve en IAs con sonido (Veo, Sora…)"],
+  "🎬 장면":["🎬 Scenes","🎬 Escenas"],
+  "장면마다 따로 만들고, 마지막에 한번에 모아서 복사해요":["Build each scene on its own, then copy them all at once","Crea cada escena por separado y cópialas todas a la vez"],
+  "{n}장":["Scene {n}","Escena {n}"],
+  "+ 장면 추가":["+ Add scene","+ Añadir escena"],
+  "◀ 앞으로":["◀ Move left","◀ Mover a la izquierda"],
+  "뒤로 ▶":["Move right ▶","Mover a la derecha ▶"],
+  "복제":["Duplicate","Duplicar"],
+  "삭제":["Delete","Eliminar"],
+  "모든 장면 한번에 복사 ({n}장)":["Copy all scenes at once ({n})","Copiar todas las escenas ({n})"],
+  "{n}장을 만들었어요":["Scene {n} added","Escena {n} añadida"],
+  "{n}장으로 복제했어요":["Duplicated as scene {n}","Duplicada como escena {n}"],
+  "{n}장을 지웠어요":["Scene {n} deleted","Escena {n} eliminada"],
+  "{n}장을 지울까요? 이 장면에서 고른 것이 모두 사라져요.":["Delete scene {n}? Everything chosen in it will be gone.","¿Eliminar la escena {n}? Se borrará todo lo elegido en ella."],
+  "장면 {n}개를 한번에 복사했어요":["Copied {n} scenes at once","{n} escenas copiadas a la vez"],
+  "장면 {n}개를 한번에 복사했어요 (빈 장면은 뺐어요)":["Copied {n} scenes at once (empty ones skipped)","{n} escenas copiadas (las vacías se omitieron)"],
+  "아직 내용이 있는 장면이 없어요":["No scene has anything in it yet","Ninguna escena tiene contenido aún"],
+  "장면은 {n}개까지 만들 수 있어요":["You can make up to {n} scenes","Puedes crear hasta {n} escenas"],
+  "모든 장면 미리보기":["All scenes preview","Vista de todas las escenas"],
+  "(비어 있음)":["(empty)","(vacía)"],
+  "장면을 붙여서 복사하면 Scene 1, Scene 2… 순서로 영어 프롬프트가 이어져요.":["Copied together as Scene 1, Scene 2… in English.","Se copian juntas como Scene 1, Scene 2… en inglés."],
   "넣으면 'Avoid:' 줄로 따로 붙어요":["Added as a separate 'Avoid:' line","Se añade como línea 'Avoid:' aparte"],
 };
 // step title, hint, placeholder per language
@@ -778,7 +815,7 @@ QUALITY.forEach(q=>LISTS[q.key]=q.list);
 
 // ============ STATE ============
 const freshV=()=>({genre:null,subject:[],lens:[],comp:[],ratio:"16:9",dur:"8",...Object.fromEntries(QUALITY.map(q=>[q.key,[]]))});
-const S={user:null,step:0,v:freshV(),custom:{},pick:null,modal:null};
+const S={user:null,step:0,v:freshV(),custom:{},pick:null,modal:null,scenes:[],cur:0};
 let KEEP=[],LANG="ko";
 // each user on this device gets their own kept words and work in progress
 const uid=u=>u.guest?"guest":u.google?"g:"+u.uid:"u:"+u.name.normalize("NFC").toLowerCase();
@@ -796,7 +833,8 @@ const rememberPro=u=>{const l=proList();if(!l.includes(uid(u)))lsSet("pc_pro",[.
 // render() saves every time, so only a real change marks the work for cloud upload
 function saveWork(){
   if(!S.user)return;
-  const w={v:S.v,custom:S.custom,step:S.step},j=JSON.stringify(w),k=uid(S.user);
+  syncScene();
+  const w={v:S.v,custom:S.custom,step:S.step,scenes:S.scenes,cur:S.cur},j=JSON.stringify(w),k=uid(S.user);
   if(saveWork.last===k+j)return;
   const first=saveWork.last===undefined||!saveWork.last.startsWith(k+"{");
   saveWork.last=k+j;lsSet("pc_work:"+k,w);
@@ -807,8 +845,93 @@ function loadWork(){
   if(!w||typeof w!=="object"||!w.v)return false;
   S.v={...freshV(),...w.v};S.custom=w.custom&&typeof w.custom==="object"?w.custom:{};
   S.step=Number.isInteger(w.step)&&w.step>=0&&w.step<STEPS.length?w.step:0;S.pick=null;
+  // scenes (1장, 2장…): older saves have none, so their work becomes scene 1
+  const list=Array.isArray(w.scenes)?w.scenes.filter(x=>x&&typeof x==="object"&&x.v).slice(0,MAX_SCENES):[];
+  if(list.length){
+    S.scenes=list.map(fixScene);
+    S.cur=Number.isInteger(w.cur)&&w.cur>=0&&w.cur<S.scenes.length?w.cur:0;
+    loadScene(S.cur);
+  }else{S.scenes=[];S.cur=0;syncScene();}
   saveWork.last=undefined;
   return true;
+}
+// ============ SCENES ============
+// S.v / S.custom / S.step are always the scene being edited; S.scenes holds every scene
+const MAX_SCENES=30;
+const fixScene=x=>({v:{...freshV(),...x.v},custom:x.custom&&typeof x.custom==="object"?x.custom:{},
+  step:Number.isInteger(x.step)&&x.step>=0&&x.step<STEPS.length?x.step:0});
+function syncScene(){if(!S.scenes.length)S.cur=0;S.scenes[S.cur]={v:S.v,custom:S.custom,step:S.step};}
+function loadScene(i){const sc=fixScene(JSON.parse(JSON.stringify(S.scenes[i])));S.cur=i;S.v=sc.v;S.custom=sc.custom;S.step=sc.step;S.pick=null;}
+function useScene(i){syncScene();loadScene(i);}
+// run fn as if scene sc were the one on screen (for the combined copy and preview)
+function withScene(sc,fn){
+  const keep={v:S.v,custom:S.custom,step:S.step};
+  const x=fixScene(sc);S.v=x.v;S.custom=x.custom;S.step=x.step;
+  try{return fn();}finally{S.v=keep.v;S.custom=keep.custom;S.step=keep.step;}
+}
+const sceneLabel=i=>tr("{n}장",{n:i+1});
+const sceneHas=i=>{syncScene();return !!withScene(S.scenes[i],buildPrompt);};
+function addScene(){
+  syncScene();
+  if(S.scenes.length>=MAX_SCENES){toast(tr("장면은 {n}개까지 만들 수 있어요",{n:MAX_SCENES}));return;}
+  S.scenes.push({v:freshV(),custom:{},step:0});
+  loadScene(S.scenes.length-1);applyKept();
+  toast(tr("{n}장을 만들었어요",{n:S.cur+1}));
+}
+function dupScene(){
+  syncScene();
+  if(S.scenes.length>=MAX_SCENES){toast(tr("장면은 {n}개까지 만들 수 있어요",{n:MAX_SCENES}));return;}
+  S.scenes.splice(S.cur+1,0,JSON.parse(JSON.stringify(S.scenes[S.cur])));
+  loadScene(S.cur+1);
+  toast(tr("{n}장으로 복제했어요",{n:S.cur+1}));
+}
+function moveScene(d){
+  syncScene();const j=S.cur+d;if(j<0||j>=S.scenes.length)return;
+  [S.scenes[S.cur],S.scenes[j]]=[S.scenes[j],S.scenes[S.cur]];S.cur=j;
+}
+function delScene(){
+  syncScene();const n=S.cur+1;
+  if(sceneHas(S.cur)&&!confirm(tr("{n}장을 지울까요? 이 장면에서 고른 것이 모두 사라져요.",{n})))return false;
+  if(S.scenes.length<=1){resetAll();}
+  else{S.scenes.splice(S.cur,1);loadScene(Math.min(S.cur,S.scenes.length-1));}
+  toast(tr("{n}장을 지웠어요",{n}));
+  return true;
+}
+// every scene that has something in it, numbered Scene 1, Scene 2… in English
+function allScenesText(){
+  syncScene();
+  const parts=S.scenes.map(sc=>withScene(sc,buildPrompt)).filter(Boolean);
+  return {text:parts.map((t,i)=>`Scene ${i+1}:\n${t}`).join("\n\n"),n:parts.length,skipped:S.scenes.length-parts.length};
+}
+function copyAll(){
+  const r=allScenesText();
+  if(!r.n){toast(tr("아직 내용이 있는 장면이 없어요"));return;}
+  copyText(r.text,r.skipped?tr("장면 {n}개를 한번에 복사했어요 (빈 장면은 뺐어요)",{n:r.n}):tr("장면 {n}개를 한번에 복사했어요",{n:r.n}));
+}
+function scenesHtml(){
+  syncScene();
+  const n=S.scenes.length;
+  return `<section class="scenes" aria-label="${tr("🎬 장면")}">
+    <div class="scenes-h"><span class="label">${tr("🎬 장면")}</span><span class="note">${tr("장면마다 따로 만들고, 마지막에 한번에 모아서 복사해요")}</span></div>
+    <div class="scene-list">${S.scenes.map((sc,i)=>`<button class="chip${i===S.cur?" on":""}${sceneHas(i)?" has":""}" data-scene="${i}" aria-pressed="${i===S.cur}"><span class="dot"></span>${sceneLabel(i)}</button>`).join("")}
+      <button class="chip add" id="addScene" ${n>=MAX_SCENES?"disabled":""}>${tr("+ 장면 추가")}</button></div>
+    <div class="scene-tools">
+      <button class="copy" id="sceneLeft" ${S.cur===0?"disabled":""}>${tr("◀ 앞으로")}</button>
+      <button class="copy" id="sceneRight" ${S.cur>=n-1?"disabled":""}>${tr("뒤로 ▶")}</button>
+      <button class="copy" id="sceneDup" ${n>=MAX_SCENES?"disabled":""}>${tr("복제")}</button>
+      <button class="copy del" id="sceneDel">${tr("삭제")}</button>
+    </div>
+    <button class="copy big alt" id="copyAll">${tr("모든 장면 한번에 복사 ({n}장)",{n})}</button>
+  </section>`;
+}
+// final step: every scene's prompt in the screen language
+function allScenesPreview(){
+  syncScene();
+  return `<div class="scene-all noselect"><span class="label">${tr("모든 장면 미리보기")}</span>
+    ${S.scenes.map((sc,i)=>{const h=withScene(sc,previewHtml);return `<div class="sc"><b>${sceneLabel(i)}</b><pre class="prompt${h?"":" empty"}">${h||tr("(비어 있음)")}</pre></div>`;}).join("")}
+    <div class="note">${tr("장면을 붙여서 복사하면 Scene 1, Scene 2… 순서로 영어 프롬프트가 이어져요.")}</div>
+  </div>
+  <button class="copy big alt" id="copyAll2">${tr("모든 장면 한번에 복사 ({n}장)",{n:S.scenes.length})}</button>`;
 }
 loadKeep();
 // 1.0 launches free: no ads and no Pro sale, so every feature is open to everyone.
@@ -1070,7 +1193,7 @@ function saveUser(){try{localStorage.setItem("pc_user",JSON.stringify(S.user));}
 function login(u){
   if(u.pro)rememberPro(u);else if(proList().includes(uid(u)))u.pro=true;
   S.user=u;saveUser();loadKeep();
-  if(!loadWork())resetAll();
+  if(!loadWork()){S.scenes=[];S.cur=0;resetAll();}
   render();scrollTo(0,0);
 }
 function logout(){
@@ -1080,7 +1203,7 @@ function logout(){
   else if(u)lsSet("pc_last",uid(u));
   clearLocalSession();render();
 }
-function clearLocalSession(){S.user=null;KEEP=[];S.modal=null;try{localStorage.removeItem("pc_user");}catch(e){}S.v=freshV();S.custom={};S.step=0;S.pick=null;}
+function clearLocalSession(){S.user=null;KEEP=[];S.modal=null;try{localStorage.removeItem("pc_user");}catch(e){}S.v=freshV();S.custom={};S.step=0;S.pick=null;S.scenes=[];S.cur=0;}
 
 // ============ CLOUD: Google sign-in + sync (only when firebase-config.js is filled in) ============
 // users/{uid} = {keep, work, pro, t}; t is the time of the last change, the newer copy wins
@@ -1235,6 +1358,7 @@ function finalBody(){
     <button class="copy big" id="copyFinal" ${t?"":"disabled"}>${tr("최종 프롬프트 복사")}</button>
     ${enNote?`<div class="note">${enNote}</div>`:""}
     ${showAds()?`<div class="note">${tr("게스트·일반 사용자는 복사 전에 짧은 광고가 두 번 나와요.")}</div>`:""}
+    ${allScenesPreview()}
     <button class="btn" id="resetBtn">${tr("처음부터 다시 만들기")}</button>`;
 }
 function modalHtml(){
@@ -1266,9 +1390,10 @@ function renderMain(){
   </div></header>
   ${AdBarBanner()}
   <main class="wrap"><div class="layout"><div class="col">
+    ${scenesHtml()}
     <nav class="steps" aria-label="steps">${STEPS.map((s,i)=>`<button class="chip${i===S.step?" on":""}${stepDone(i)?" done":""}" data-step="${i}"><span class="n">${i+1}</span>${stepText(i)[0]}</button>`).join("")}</nav>
     <section class="panel">
-      <h2>${S.step+1}. ${stepText(S.step)[0]}</h2>
+      <h2>${S.scenes.length>1?`<span class="scene-tag">${sceneLabel(S.cur)}</span> `:""}${S.step+1}. ${stepText(S.step)[0]}</h2>
       <p class="hint">${stepText(S.step)[1]}</p>
       ${stepBody()}
       <div class="nav">
@@ -1312,6 +1437,13 @@ function bind(){
   on("nextBtn",()=>go(Math.min(LAST,S.step+1)));
   on("copyLive",copyLive);
   on("copyFinal",copyFinal);
+  app.querySelectorAll("[data-scene]").forEach(b=>b.onclick=()=>{const i=+b.dataset.scene;if(i!==S.cur){useScene(i);render();scrollTo(0,0);}});
+  on("addScene",()=>{addScene();render();scrollTo(0,0);});
+  on("sceneDup",()=>{dupScene();render();});
+  on("sceneLeft",()=>{moveScene(-1);render();});
+  on("sceneRight",()=>{moveScene(1);render();});
+  on("sceneDel",()=>{if(delScene())render();});
+  on("copyAll",copyAll);on("copyAll2",copyAll);
   on("keepBtn",()=>{toggleKeep();render();});
   on("clearKeep",()=>{KEEP=[];saveKeep();render();toast(tr("유지를 모두 풀었어요"));});
   on("adClose",()=>{if(S.modal&&S.modal.left<=0&&S.modal.n<2){startAd(2);return;}if(S.modal&&S.modal.left<=0){const t=buildPrompt();S.modal=null;render();if(t)copyText(t);}});
